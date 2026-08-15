@@ -1,25 +1,29 @@
 const CONFIG = {
-    pieces: { minScale: 0.1, maxScale: 0.18 },
+    /** Off for now — set true to bring back drifting cut-outs on index. */
+    floatsEnabled: false,
+    pieces: { minScale: 0.055, maxScale: 0.1 },
     /** Largura ≈ min(vw,vh) * escala — no telemóvel o ecrã estreito pede escalas maiores. */
-    piecesMobile: { minScale: 0.3, maxScale: 0.46 },
-    workFloats: { minScale: 0.07, maxScale: 0.12 },
-    workFloatsMobile: { minScale: 0.2, maxScale: 0.34 },
+    piecesMobile: { minScale: 0.16, maxScale: 0.26 },
+    workFloats: { minScale: 0.055, maxScale: 0.09 },
+    workFloatsMobile: { minScale: 0.14, maxScale: 0.22 },
     paths: { items: 'main/items/' },
-    /** Movimento flutuante: vx/vy por frame (~60fps). */
+    /** Movimento flutuante: vx/vy por frame (~60fps). Lento — menu, não dança. */
     drift: {
-        vMax: 0.82,
-        damping: 0.99935,
-        minSpeed: 0.055,
-        nudge: 0.16,
+        vMax: 0.28,
+        damping: 0.9997,
+        minSpeed: 0.02,
+        nudge: 0.04,
     },
+    /** Zona livre à volta do título / nav (px). */
+    titleKeepoutPad: 28,
 };
 
 const WORK_FLOATS = [
-    { path: 'main/items/ceramics.png', href: 'https://andreianmatos.github.io/ceramics' },
-    { path: 'main/items/images.png', href: 'https://andreianmatos.github.io/images' },
-    { path: 'main/items/drawings.png', href: 'https://andreianmatos.github.io/drawings' },
-    { path: 'main/items/videos.gif', href: 'https://andreianmatos.github.io/videos' },
-    { path: 'main/items/writings.png', href: 'writings.html' },
+    { path: 'work/ceramics.png', href: 'https://andreianmatos.github.io/ceramics', label: 'ceramics' },
+    { path: 'work/images.png', href: 'https://andreianmatos.github.io/images', label: 'images' },
+    { path: 'work/drawings.png', href: 'https://andreianmatos.github.io/drawings', label: 'drawings' },
+    { path: 'work/videos.gif', href: 'https://andreianmatos.github.io/videos', label: 'videos' },
+    { path: 'work/writings.png', href: 'writings.html', label: 'writings' },
 ];
 
 /** Recortes na raiz de `main/items/` (a pasta `no/` não entra nos floats). Acrescenta aqui ficheiros novos. */
@@ -76,16 +80,64 @@ function contentScrollHeight() {
     );
 }
 
+function titleKeepoutRect() {
+    const pad = isMobile() ? 16 : CONFIG.titleKeepoutPad;
+    const layer = document.getElementById('drawings-layer');
+    const mount = document.getElementById('pretext-lines');
+    const vw = contentScrollWidth();
+    const vh = viewportHeight();
+    const fallback = {
+        left: 0,
+        top: 0,
+        right: Math.min(vw * 0.72, 360) + pad,
+        bottom: Math.min(vh * 0.2, 96) + pad,
+    };
+    if (!layer) return fallback;
+    const lr = layer.getBoundingClientRect();
+    const rows = mount?.querySelectorAll('.pretext-line-row');
+    if (!rows?.length) return fallback;
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    rows.forEach((row) => {
+        const r = row.getBoundingClientRect();
+        left = Math.min(left, r.left);
+        top = Math.min(top, r.top);
+        right = Math.max(right, r.right);
+        bottom = Math.max(bottom, r.bottom);
+    });
+    return {
+        left: Math.max(0, left - lr.left - pad),
+        top: Math.max(0, top - lr.top - pad),
+        right: Math.min(vw * 0.85, right - lr.left + pad),
+        bottom: Math.min(Math.max(72, vh * 0.28), bottom - lr.top + pad),
+    };
+}
+
+function overlapsKeepout(x, y, w, h, k) {
+    return x < k.right && x + w > k.left && y < k.bottom && y + h > k.top;
+}
+
+function pushOutOfTitleKeepout(item, k) {
+    if (!overlapsKeepout(item.x, item.y, item.w, item.h, k)) return;
+    const toRight = k.right - item.x;
+    const toBottom = k.bottom - item.y;
+    if (toRight <= toBottom) {
+        item.x = k.right;
+        item.vx = Math.abs(item.vx) || CONFIG.drift.minSpeed;
+    } else {
+        item.y = k.bottom;
+        item.vy = Math.abs(item.vy) || CONFIG.drift.minSpeed;
+    }
+}
+
 function getLayerLocalPoint(e, layer) {
     const r = layer.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
 let floatingItems = [];
-
-/** Evitar notifyPretextDirty a 60fps: destrói o DOM do Pretext e o clique no CV nunca dispara. */
-let lastPhysicsPretextNotify = 0;
-const PHYSICS_PRETEXT_INTERVAL_MS = 280;
 
 function isMobile() {
     return window.matchMedia('(max-width: 800px)').matches;
@@ -257,20 +309,31 @@ function setContactPanelOpen(open) {
     }, PANEL_FADE_OUT_MS + 140);
 }
 
-/** Botão CV (Pretext) chama isto; definido cedo para o módulo poder usar. */
-function toggleCvPanelFromUi() {
-    const panel = document.getElementById('cv-inline');
+function setPanelOpen(panelId, bodyClass, open) {
+    const panel = document.getElementById(panelId);
     if (!panel) return;
-    setCvPanelOpen(!panel.classList.contains('is-open'));
+    const already = panel.classList.contains('is-open');
+    if (open === already) return;
+    if (open) {
+        panel.classList.add('is-open');
+        panel.setAttribute('aria-hidden', 'false');
+        document.body.classList.add(bodyClass);
+    } else {
+        panel.classList.remove('is-open', 'panel-fading-out');
+        panel.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove(bodyClass);
+    }
 }
-window.toggleCvPanelFromUi = toggleCvPanelFromUi;
 
-function toggleContactPanelFromUi() {
-    const panel = document.getElementById('contact-inline');
-    if (!panel) return;
-    setContactPanelOpen(!panel.classList.contains('is-open'));
+function setSiteView(view) {
+    setPanelOpen('info-inline', 'info-open', view === 'info');
+    setPanelOpen('works-inline', 'works-open', view === 'works');
+    if (location.hash) {
+        history.replaceState(null, '', `${location.pathname}${location.search}`);
+    }
+    requestAnimationFrame(() => notifyPretextDirty());
 }
-window.toggleContactPanelFromUi = toggleContactPanelFromUi;
+window.setSiteView = setSiteView;
 
 function loadImageUrl(url) {
     return new Promise((res) => {
@@ -301,8 +364,18 @@ function attachPointerHandlers(container, item) {
             item.dragMoved,
             Math.hypot(e.clientX - item.dragStartX, e.clientY - item.dragStartY)
         );
+        if (item.el?.style) {
+            item.el.style.transform = `translate3d(${item.x}px, ${item.y}px, 0)`;
+        }
         notifyPretextDirty();
     };
+
+    container.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'mouse') item.isHovered = true;
+    });
+    container.addEventListener('pointerleave', () => {
+        item.isHovered = false;
+    });
 
     container.onpointerdown = (e) => {
         if (e.button !== 0 && e.pointerType === 'mouse') return;
@@ -314,6 +387,7 @@ function attachPointerHandlers(container, item) {
         item.dragStartX = e.clientX;
         item.dragStartY = e.clientY;
         item.dragDownAt = Date.now();
+        item.pointerType = e.pointerType;
         container.setPointerCapture(e.pointerId);
         item.dragOffsetX = lx - item.x;
         item.dragOffsetY = ly - item.y;
@@ -321,7 +395,8 @@ function attachPointerHandlers(container, item) {
     container.onpointermove = onMove;
     container.onpointerup = () => {
         item.isDragging = false;
-        const tap = item.linkHref && item.dragMoved < 12 && Date.now() - item.dragDownAt < 900;
+        const slop = item.pointerType === 'touch' || isMobile() ? 22 : 12;
+        const tap = item.linkHref && item.dragMoved < slop && Date.now() - item.dragDownAt < 900;
         if (tap) {
             const h = item.linkHref;
             if (/^https?:\/\//i.test(h)) {
@@ -337,7 +412,7 @@ function attachPointerHandlers(container, item) {
 }
 
 function createPieceElement(imgObj, parent, opts = {}) {
-    const { extraClass = '', linkHref = null } = opts;
+    const { extraClass = '', linkHref = null, label = '' } = opts;
     const m = isMobile();
     const isWork = /\bwork-float\b/.test(extraClass);
     let mn;
@@ -354,14 +429,15 @@ function createPieceElement(imgObj, parent, opts = {}) {
     container.className = `drawing-item${extraClass ? ` ${extraClass}` : ''}`;
     const imgEl = document.createElement('img');
     imgEl.src = imgObj.src;
-    imgEl.alt = '';
+    imgEl.alt = label;
     imgEl.draggable = false;
     container.appendChild(imgEl);
 
     const scale = mn + Math.random() * (mx - mn);
     const vw = viewportWidth();
     const refW = m ? Math.min(vw, viewportHeight()) : vw;
-    const w = refW * scale;
+    let w = refW * scale;
+    if (m && isWork) w = Math.max(48, w);
     const ratio =
         imgObj.naturalWidth > 0 ? imgObj.naturalHeight / imgObj.naturalWidth : 1;
     const h = w * ratio;
@@ -371,15 +447,29 @@ function createPieceElement(imgObj, parent, opts = {}) {
     const docH = contentScrollHeight();
     const maxX = Math.max(10, docW - w - 10);
     const maxY = Math.max(10, docH - h - 10);
+    const keepout = titleKeepoutRect();
+    let x = Math.random() * maxX + 10;
+    let y = Math.random() * maxY + 10;
+    for (let i = 0; i < 40 && overlapsKeepout(x, y, w, h, keepout); i++) {
+        x = Math.random() * maxX + 10;
+        y = Math.random() * maxY + 10;
+    }
+    if (overlapsKeepout(x, y, w, h, keepout)) {
+        x = Math.min(maxX, Math.max(10, keepout.right + 8));
+        y = Math.min(maxY, Math.max(10, keepout.bottom + 8));
+    }
     const item = {
         el: container,
-        x: Math.random() * maxX + 10,
-        y: Math.random() * maxY + 10,
+        x,
+        y,
         vx: (Math.random() - 0.5) * 2 * CONFIG.drift.vMax,
         vy: (Math.random() - 0.5) * 2 * CONFIG.drift.vMax,
         isDragging: false,
+        isHovered: false,
         /** Drift só depois de visível — evita saltos quando o fade-in atrasa. */
         physicsReady: false,
+        scale,
+        ratio,
         w,
         h,
         linkHref,
@@ -387,12 +477,11 @@ function createPieceElement(imgObj, parent, opts = {}) {
         dragStartX: 0,
         dragStartY: 0,
         dragDownAt: 0,
+        pointerType: 'mouse',
     };
 
     container.style.transform = `translate3d(${item.x}px, ${item.y}px, 0)`;
-    if (linkHref) {
-        container.title = 'Arrastar — ou clicar (sem mover) para abrir';
-    }
+    if (label) container.title = label;
     attachPointerHandlers(container, item);
 
     parent.appendChild(container);
@@ -416,7 +505,8 @@ async function initFloating() {
     loaded.sort(() => Math.random() - 0.5);
 
     const staggerMs = isMobile() ? 0 : 48;
-    loaded.forEach((img, index) => {
+    const pieces = isMobile() ? loaded.slice(0, 4) : loaded;
+    pieces.forEach((img, index) => {
         createPieceElement(img, layer, {});
         const el = floatingItems[floatingItems.length - 1]?.el;
         if (!el) return;
@@ -450,6 +540,7 @@ async function initWorkFloats() {
         createPieceElement(img, layer, {
             extraClass: 'work-float',
             linkHref: def.href,
+            label: def.label,
         });
         const el = floatingItems[floatingItems.length - 1]?.el;
         if (!el) return;
@@ -466,7 +557,16 @@ async function initWorkFloats() {
 }
 
 function updatePhysics() {
+    if (
+        document.body.classList.contains('works-open') ||
+        document.body.classList.contains('info-open')
+    ) {
+        requestAnimationFrame(updatePhysics);
+        return;
+    }
+
     const bufferZone = 40;
+    const keepout = titleKeepoutRect();
 
     floatingItems.forEach((item) => {
         if (!item.physicsReady) {
@@ -475,7 +575,7 @@ function updatePhysics() {
             }
             return;
         }
-        if (!item.isDragging) {
+        if (!item.isDragging && !item.isHovered) {
             item.x += item.vx;
             item.y += item.vy;
 
@@ -508,6 +608,10 @@ function updatePhysics() {
             item.x = Math.max(0, Math.min(maxX, item.x));
             item.y = Math.max(0, Math.min(maxY, item.y));
 
+            pushOutOfTitleKeepout(item, keepout);
+            item.x = Math.max(0, Math.min(maxX, item.x));
+            item.y = Math.max(0, Math.min(maxY, item.y));
+
             const damp = CONFIG.drift.damping;
             item.vx *= damp;
             item.vy *= damp;
@@ -525,12 +629,35 @@ function updatePhysics() {
         }
     });
 
-    const now = performance.now();
-    if (now - lastPhysicsPretextNotify >= PHYSICS_PRETEXT_INTERVAL_MS) {
-        lastPhysicsPretextNotify = now;
-        notifyPretextDirty();
-    }
     requestAnimationFrame(updatePhysics);
+}
+
+function rescaleFloatingItems() {
+    const m = isMobile();
+    const vw = viewportWidth();
+    const refW = m ? Math.min(vw, viewportHeight()) : vw;
+    const keepout = titleKeepoutRect();
+    const docW = contentScrollWidth();
+    const docH = contentScrollHeight();
+    floatingItems.forEach((item) => {
+        const isWork = item.el?.classList.contains('work-float');
+        let w = refW * (item.scale || 0.1);
+        if (m && isWork) w = Math.max(48, w);
+        const h = w * (item.ratio || 1);
+        item.w = w;
+        item.h = h;
+        if (item.el) item.el.style.width = `${w}px`;
+        const maxX = Math.max(0, docW - w);
+        const maxY = Math.max(0, docH - h);
+        item.x = Math.max(0, Math.min(maxX, item.x));
+        item.y = Math.max(0, Math.min(maxY, item.y));
+        pushOutOfTitleKeepout(item, keepout);
+        item.x = Math.max(0, Math.min(maxX, item.x));
+        item.y = Math.max(0, Math.min(maxY, item.y));
+        if (item.el?.style) {
+            item.el.style.transform = `translate3d(${item.x}px, ${item.y}px, 0)`;
+        }
+    });
 }
 
 function toggleCollapsible(element) {
@@ -543,7 +670,7 @@ function toggleCollapsible(element) {
 }
 
 function initCvInline() {
-    const panel = document.getElementById('cv-inline');
+    const panel = document.getElementById('info-inline');
     const textBlock = document.querySelector('.text-block');
     if (!panel || !textBlock || textBlock.dataset.cvDeleg) return;
     textBlock.dataset.cvDeleg = '1';
@@ -552,9 +679,7 @@ function initCvInline() {
 
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
-        if (panel.classList.contains('is-open')) setCvPanelOpen(false);
-        const contactPanel = document.getElementById('contact-inline');
-        if (contactPanel?.classList.contains('is-open')) setContactPanelOpen(false);
+        setSiteView('index');
     });
 
     panel.addEventListener('transitionend', (e) => {
@@ -563,9 +688,9 @@ function initCvInline() {
         }
     });
 
-    const contactPanel = document.getElementById('contact-inline');
-    if (contactPanel) {
-        contactPanel.addEventListener('transitionend', (e) => {
+    const worksPanel = document.getElementById('works-inline');
+    if (worksPanel) {
+        worksPanel.addEventListener('transitionend', (e) => {
             if (e.propertyName === 'max-height') {
                 notifyPretextDirty();
             }
@@ -575,8 +700,24 @@ function initCvInline() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initCvInline();
-    setContactPanelOpen(true);
-    setCvPanelOpen(true);
+    setSiteView('index');
+    if (!CONFIG.floatsEnabled || !document.getElementById('drawings-layer')) return;
+    if (prefersReducedMotion()) {
+        CONFIG.drift.vMax = 0;
+        CONFIG.drift.minSpeed = 0;
+        CONFIG.drift.nudge = 0;
+    }
+    let viewportTimer = 0;
+    const onViewportChange = () => {
+        window.clearTimeout(viewportTimer);
+        viewportTimer = window.setTimeout(() => {
+            rescaleFloatingItems();
+            notifyPretextDirty();
+        }, 160);
+    };
+    window.addEventListener('resize', onViewportChange, { passive: true });
+    window.addEventListener('orientationchange', onViewportChange, { passive: true });
+    window.visualViewport?.addEventListener('resize', onViewportChange, { passive: true });
     updatePhysics();
     void (async () => {
         await initFloating();

@@ -1,11 +1,15 @@
 /* Scrollbar invisível na home (evita saltos de largura / relayout Pretext quando aparecia). */
 body.page-home.cv-open,
-body.page-home.contact-open {
+body.page-home.contact-open,
+body.page-home.info-open,
+body.page-home.works-open {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
 body.page-home.cv-open::-webkit-scrollbar,
-body.page-home.contact-open::-webkit-scrollbar {
+body.page-home.contact-open::-webkit-scrollbar,
+body.page-home.info-open::-webkit-scrollbar,
+body.page-home.works-open::-webkit-scrollbar {
     width: 0;
     height: 0;
     background: transparent;
@@ -14,6 +18,7 @@ body.page-home.contact-open::-webkit-scrollbar {
 :root {
     /* Tipografia fluida: corpo único; escala com vw + vh */
     --fs-fluid-body: clamp(0.82rem, 0.42rem + 0.85vw + 0.55vh, 1.28rem);
+    --fs-fluid-info: clamp(0.64rem, 0.32rem + 0.55vw + 0.28vh, 0.9rem);
     --fs-fluid-hint: clamp(0.74rem, 0.66rem + 0.35vw + 0.2vh, 0.95rem);
     /* Entrelinhas: pretext mede line-height no JS — manter alinhado aqui */
     --lh-pretext: 1.86;
@@ -22,6 +27,8 @@ body.page-home.contact-open::-webkit-scrollbar {
 
 html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body, html {
@@ -46,23 +53,17 @@ body, html {
 /* Home: contendo bloco para #drawings-layer (absolute + bottom:0 = altura do conteúdo) */
 body.page-home {
     position: relative;
-}
-
-/* Home: sem scroll com painéis fechados; scroll quando CV ou Contact está aberto */
-body.page-home:not(.cv-open):not(.contact-open) {
     overflow-y: hidden;
     height: 100%;
     height: 100dvh;
 }
 
-body.page-home.cv-open,
-body.page-home.contact-open {
+body.page-home.info-open,
+body.page-home.works-open {
     overflow-y: auto;
     height: auto;
     min-height: 100dvh;
     scroll-behavior: auto;
-    /* Largura estável: reserva gaveta mesmo sem barra visível (evita glitch ao mudar overflow). */
-    scrollbar-gutter: stable;
 }
 
 /* Rola com o body: ocupa da origem até ao fim do conteúdo em fluxo (.site-chrome). */
@@ -74,30 +75,44 @@ body.page-home.contact-open {
     bottom: 0;
     z-index: 900;
     pointer-events: none;
-}
-/* Telemóvel: texto ocupa quase todo o ecrã; camada fixa por baixo do .site-chrome (z 1000) ficava tapada. */
-@media screen and (max-width: 800px) {
-    #drawings-layer {
-        z-index: 1100;
-    }
+    display: none;
 }
 #drawings-layer .drawing-item {
     pointer-events: auto;
+}
+body.page-home.info-open #drawings-layer,
+body.page-home.works-open #drawings-layer {
+    display: none;
 }
 
 .drawing-item {
     position: absolute;
     left: 0;
     top: 0;
-    cursor: grab;
+    cursor: pointer;
     opacity: 0;
-    transition: opacity 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+    transition: opacity 0.55s cubic-bezier(0.33, 1, 0.68, 1), filter 0.2s ease;
     touch-action: none;
     will-change: transform;
     filter: drop-shadow(0 3px 14px rgba(0, 0, 0, 0.14));
 }
 .drawing-item.appeared {
     opacity: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+    .drawing-item:hover {
+        z-index: 2;
+        filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.28));
+    }
+    .cv-inline.pretext-cv .collapsible:hover {
+        color: #2a2a2a;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    .works-entry:hover {
+        border-color: #0a0a0a;
+        background: rgba(244, 241, 234, 0.95);
+    }
 }
 .drawing-item:active {
     cursor: grabbing;
@@ -120,11 +135,15 @@ img {
     min-height: 100vh;
     min-height: 100dvh;
     width: 100%;
+    max-width: 100%;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     box-sizing: border-box;
-    padding: clamp(1rem, 4vh, 2.5rem) clamp(0.65rem, 3vw, 1.5rem) clamp(2rem, 6vh, 4rem);
+    padding-top: max(clamp(0.85rem, 3.5vh, 2.5rem), env(safe-area-inset-top, 0px));
+    padding-right: max(clamp(0.7rem, 3vw, 1.5rem), env(safe-area-inset-right, 0px));
+    padding-bottom: max(clamp(1.5rem, 5vh, 4rem), env(safe-area-inset-bottom, 0px));
+    padding-left: max(clamp(0.7rem, 3vw, 1.5rem), env(safe-area-inset-left, 0px));
     pointer-events: none;
 }
 
@@ -134,7 +153,7 @@ img {
     max-width: none;
     flex: 1 1 auto;
     margin: 0;
-    text-align: center;
+    text-align: left;
     box-sizing: border-box;
 }
 
@@ -165,6 +184,7 @@ img {
    medida usada para colocar os fragmentos e as palavras ficam “coladas”. */
 .pretext-lines {
     position: relative;
+    z-index: 40;
     margin: 0;
     width: 100%;
     font-family: "Archivo Narrow", sans-serif;
@@ -183,6 +203,10 @@ img {
     padding: 0;
     white-space: nowrap;
     line-height: var(--lh-pretext);
+}
+
+#info-inline .pretext-glyph {
+    display: inline-block;
 }
 
 /* Corpo: itálico por defeito (.pretext-lines); nome só negrito + romano; links do bio sublinhados */
@@ -237,8 +261,7 @@ img {
     opacity: 0.88;
 }
 
-.cv-inline-trigger,
-.contact-inline-trigger {
+.pretext-nav-link {
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
@@ -254,21 +277,21 @@ img {
     position: relative;
     z-index: 5;
     pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     transition: color 0.2s ease;
 }
-
-/* Painel aberto: vermelho escuro nos toggles Pretext */
-body.cv-open #cv-inline-toggle,
-#cv-inline-toggle[aria-expanded='true'] {
-    color: #6b0a0a;
-}
-body.contact-open #contact-inline-toggle,
-#contact-inline-toggle[aria-expanded='true'] {
-    color: #6b0a0a;
+.pretext-nav-link::after {
+    content: '';
+    position: absolute;
+    inset: -0.55em -0.5em;
 }
 
-.cv-inline-trigger:focus-visible,
-.contact-inline-trigger:focus-visible {
+.pretext-nav-link.is-current {
+    color: #6b0a0a;
+}
+
+.pretext-nav-link:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
 }
@@ -279,6 +302,10 @@ body.contact-open #contact-inline-toggle,
     display: flex;
     flex-direction: column;
     align-items: stretch;
+}
+.pretext-bundle > .pretext-fit-outer:first-child {
+    position: relative;
+    z-index: 40;
 }
 
 .pretext-fit-outer {
@@ -317,9 +344,9 @@ body.contact-open #contact-inline-toggle,
 
 /* CV: mesma tipografia que o bloco pretext (corpo + entrelinhas + tracking) */
 .cv-inline.pretext-cv {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.55s ease-out;
+    display: none;
+    max-height: none;
+    overflow: visible;
     margin: 0;
     padding: 0;
     font-family: "Archivo Narrow", sans-serif;
@@ -334,10 +361,27 @@ body.contact-open #contact-inline-toggle,
     box-sizing: border-box;
 }
 .cv-inline.is-open {
-    max-height: 3200px;
+    display: block;
     overflow: visible;
     margin-top: clamp(0.35rem, 1.5vh, 0.9rem);
     flex: 0 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+#info-inline:not(.is-open),
+#works-inline:not(.is-open) {
+    display: none;
+}
+
+#info-inline.cv-inline.pretext-cv,
+#info-inline .pretext-lines,
+#info-inline .collapsible,
+#works-inline.cv-inline.pretext-cv,
+#works-inline .works-list,
+#works-inline .works-section,
+#works-inline .works-entry {
+    font-size: var(--fs-fluid-info);
 }
 
 /* Fechar CV/Contact: fade primeiro (evita títulos a desaparecer por último no clip do max-height). */
@@ -361,7 +405,7 @@ body.contact-open #contact-inline-toggle,
     letter-spacing: normal;
     word-spacing: normal;
 }
-.contact-inline .pretext-tool-link {
+.cv-inline .pretext-tool-link {
     text-decoration: none;
 }
 .pretext-cv-body {
@@ -394,13 +438,12 @@ body.contact-open #contact-inline-toggle,
     border: none;
     cursor: pointer;
     text-decoration: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 .cv-inline.pretext-cv .collapsible[aria-expanded='true'] {
     font-style: italic;
     font-weight: 700;
-}
-.cv-inline.pretext-cv .collapsible:hover {
-    color: #2a2a2a;
 }
 
 .cv-inline.pretext-cv .content {
@@ -438,8 +481,111 @@ a {
     color: inherit;
 }
 
+.works-list {
+    text-align: left;
+    width: 100%;
+    max-width: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+.works-col {
+    min-width: 0;
+    break-inside: avoid;
+}
+.works-section {
+    margin: 0.15rem 0 0.75rem;
+    padding: 0;
+    font-size: inherit;
+    font-weight: 700;
+    font-style: italic;
+    line-height: var(--lh-pretext);
+}
+.works-entry {
+    display: block;
+    margin: 0 0 0.55rem;
+    padding: 0.5rem 0.6rem 0.55rem;
+    line-height: 1.35;
+    color: inherit;
+    text-decoration: none;
+    pointer-events: auto;
+    border: 1px solid rgba(10, 10, 10, 0.62);
+    background: rgba(244, 241, 234, 0.78);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+.works-title {
+    display: block;
+    font-weight: 400;
+    font-style: italic;
+}
+.works-title em {
+    font-style: italic;
+    font-weight: 400;
+}
+.works-meta,
+.works-year {
+    display: block;
+    margin: 0.18rem 0 0;
+    font-style: italic;
+    font-weight: 400;
+}
+
+@media screen and (min-width: 700px) {
+    .works-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: clamp(1.25rem, 3vw, 2.5rem);
+        row-gap: 1.35rem;
+        align-items: start;
+    }
+}
+
+@media screen and (min-width: 960px) {
+    .works-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media screen and (min-width: 1280px) {
+    .works-list {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
 @media screen and (max-width: 800px) {
     :root {
-        --fs-fluid-body: clamp(0.8rem, 0.4rem + 0.95vw + 0.65vh, 1.22rem);
+        --fs-fluid-body: clamp(0.92rem, 0.55rem + 2.4vw, 1.12rem);
+        --fs-fluid-info: clamp(0.7rem, 0.42rem + 1.3vw, 0.84rem);
+        --lh-pretext: 1.72;
+    }
+
+    body, html {
+        background-attachment: scroll;
+    }
+
+    .pretext-nav-link::after {
+        inset: -0.7em -0.55em;
+    }
+
+    .cv-inline.pretext-cv .collapsible {
+        min-height: 2.4rem;
+        padding: 0.3rem 0;
+        touch-action: manipulation;
+    }
+
+    .text-block a,
+    .text-block button {
+        touch-action: manipulation;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+    .drawing-item {
+        transition: none;
     }
 }

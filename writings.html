@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f4f1ea">
     <title>Writings — Andreia Matos</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,15 +21,23 @@
             overflow-y: auto;
             overflow-x: hidden;
             min-height: 100vh;
-            width: 100vw;
+            min-height: 100dvh;
+            width: 100%;
             position: relative;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
         }
         
         .container {
             position: relative;
-            width: 100vw;
+            width: 100%;
             min-height: 100vh;
+            min-height: 100dvh;
             padding: 40px;
+            padding-top: max(40px, env(safe-area-inset-top, 0px));
+            padding-right: max(40px, env(safe-area-inset-right, 0px));
+            padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+            padding-left: max(40px, env(safe-area-inset-left, 0px));
             box-sizing: border-box;
             max-width: 900px;
             margin: 0 auto;
@@ -76,25 +85,37 @@
         
         @media screen and (max-width: 800px) {
             .container {
-                padding: 30px 25px;
+                padding: 28px 20px;
+                padding-top: max(28px, env(safe-area-inset-top, 0px));
+                padding-right: max(20px, env(safe-area-inset-right, 0px));
+                padding-bottom: max(28px, env(safe-area-inset-bottom, 0px));
+                padding-left: max(20px, env(safe-area-inset-left, 0px));
+            }
+            .writing-block a {
+                font-size: 1.05rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="writing-block" data-year="2026">
+            <a href="https://drive.google.com/file/d/1x5NkW_KvGeS5hPfVycPog_uitsPkmW0J/view?usp=sharing" target="_blank" rel="noopener noreferrer">Valor Sentimental: o Pato e o Poço</a>
+            <p>Memórias Descritivas (2026)</p>
+            <p>Texto escrito no contexto do projecto Memórias Descritivas.</p>
+        </div>
         <div class="writing-block" data-year="2025">
-            <a href="https://periodicos.ufs.br/Travessias/article/view/n34p130" target="_blank">Do labirinto ao Anjo: corpo, identidade e tecnologia na obra de Mari Klonaris e Katerina Thomadaki</a>
+            <a href="https://doi.org/10.51951/ti.v15i34.p130-145" target="_blank" rel="noopener noreferrer">Do labirinto ao Anjo: corpo, identidade e tecnologia na obra de Mari Klonaris e Katerina Thomadaki</a>
             <p>Travessias Interativas, v. 15, n. 34, p. 130–145 (2025)</p>
             <p>Este artigo oferece uma análise crítica da obra pioneira de Maria Klonaris e Katerina Thomadaki, com foco nos seus ciclos Double Labyrinthe e Le Cycle de l'Ange. Através de um enquadramento crítico feminista e pós-humanista, examina como as artistas subvertem as narrativas dominantes sobre o corpo, a identidade e a tecnologia.</p>
         </div>
         <div class="writing-block" data-year="2025">
-            <a href="https://d1wqtxts1xzle7.cloudfront.net/125595150/Primett_et_al._2025_Designing_for_Kinaesthetic_Empathy_using_Data_Driven_Movement_Matching-libre.pdf?1764602965=&response-content-disposition=inline%3B+filename%3DDesigning_for_Kinaesthetic_Empathy_using.pdf&Expires=1769101409&Signature=e3DkAR3-3-oxpzoXXW6~qTKC85Lj6JjPAh~fg6kbHAiwhsTO6I9rRnsPbCdnrMDys7Vzp-IoKqB-cQIUvGaak8GnQwylEXmo0~mnlPjVJ3tW8es6NlaZwye3yYvn22QiOmjP1EHcgaHV8BKkVQ90gJZf7I~X~NUP-xMFUk1vcSmLNrDJvbsv7dg8IPII1~77ZSCbCpS8qRS6eJ0WCJF98QrihzWUqfmrGxYORrmTB6tKufqB4UudeVj24sMP41sxBuXFEjHxtMbETJg2AX~dN5LFHD2oq6bcf6B0i1RPE66ivA9YE8HVU9YJA-Ko8kSCJfuuZ1Jc7kJEOgOptC7xJA__&Key-Pair-Id=APKAJLOHF5GGSLRBV4ZA" target="_blank">Designing for Kinaesthetic Empathy using Data-Driven Movement Matching</a>
+            <a href="https://doi.org/10.1145/3773699.3774351" target="_blank" rel="noopener noreferrer">Designing for Kinaesthetic Empathy using Data-Driven Movement Matching</a>
             <p>William Primett, Nuno do Nascimento Correia, Naoto Hieda, Andreia Matos (2025)</p>
             <p>New methods for movement capture and modelling have inspired a shift in embodied interaction design. With Machine Learning tools at the forefront of movement sensing tasks, data modelling has been studied to support novel interaction paradigms informed by somatic and kinaesthetic practices.</p>
         </div>
         <div class="writing-block" data-year="2022">
-            <a href="https://www.researchgate.net/profile/Andreia-Matos-8/publication/376749969_On_the_Feeling_of_Acoustic_and_Visual_Tension_in_Generative_Art/links/658589d23c472d2e8e7b109f/On-the-Feeling-of-Acoustic-and-Visual-Tension-in-Generative-Art.pdf" target="_blank">On the Feeling of Acoustic and Visual Tension in Generative Art</a>
+            <a href="https://scholar.tecnico.ulisboa.pt/records/9FJgdVVv_8D6z9BdufxsBeEHu9O4hzs3Zuki" target="_blank" rel="noopener noreferrer">On the Feeling of Acoustic and Visual Tension in Generative Art</a>
             <p>Master's thesis, Instituto Superior Técnico (2022)</p>
             <p>From a comprehensive literature review of generative art through the lenses of acoustics, visual art and their interrelation, accompanied by an exploration of tension from a psychological and creative standpoint, a context-aware bi-parted experiment was performed through an interactive application.</p>
         </div>
@@ -107,9 +128,9 @@
             
             // Sort by year (newest first)
             blocks.sort((a, b) => {
-                const yearA = parseInt(a.dataset.year) || 0;
-                const yearB = parseInt(b.dataset.year) || 0;
-                return yearB - yearA; // Newest first
+                const yearA = a.dataset.year ? parseInt(a.dataset.year, 10) : Infinity;
+                const yearB = b.dataset.year ? parseInt(b.dataset.year, 10) : Infinity;
+                return yearB - yearA;
             });
             
             // Reorder in DOM

@@ -1,84 +1,52 @@
 /**
- * Pretext: bio + painéis Contact e CV (obstáculos / alinhamento por bloco).
+ * Pretext: nav + info on the same page; texto desvia dos ícones a flutuar.
  */
+
+function isInfoOpen() {
+  return document.body?.classList.contains('info-open');
+}
+
+function isWorksOpen() {
+  return document.body?.classList.contains('works-open');
+}
+
+function currentNav() {
+  if (isWorksOpen()) return 'works';
+  if (isInfoOpen()) return 'info';
+  return 'index';
+}
 
 const TEXT_RUNS = [
   { text: 'Andreia Matos', className: 'pretext-name', el: 'span' },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
-    text: 'contact',
-    className: 'contact-inline-trigger',
+    text: 'index',
+    className: 'pretext-nav-link',
     el: 'button',
-    id: 'contact-inline-toggle',
+    nav: 'index',
   },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
-    text: 'CV',
-    className: 'cv-inline-trigger',
+    text: 'info',
+    className: 'pretext-nav-link',
     el: 'button',
-    id: 'cv-inline-toggle',
+    nav: 'info',
   },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
   {
-    text: 'computer scientist and artist; maker of things, such as, ',
+    text: 'works',
+    className: 'pretext-nav-link',
+    el: 'button',
+    nav: 'works',
+  },
+];
+
+const TEXT_BIO_RUNS = [
+  {
+    text: 'computer scientist and artist.',
     className: 'pretext-blurb',
     el: 'span',
   },
-  {
-    text: 'ceramics',
-    className: 'pretext-work-link',
-    el: 'a',
-    href: 'https://andreianmatos.github.io/ceramics',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-  },
-  { text: ', ', className: 'pretext-work-sep', el: 'span' },
-  {
-    text: 'images',
-    className: 'pretext-work-link',
-    el: 'a',
-    href: 'https://andreianmatos.github.io/images',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-  },
-  { text: ', ', className: 'pretext-work-sep', el: 'span' },
-  {
-    text: 'drawings',
-    className: 'pretext-work-link',
-    el: 'a',
-    href: 'https://andreianmatos.github.io/drawings',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-  },
-  { text: ', ', className: 'pretext-work-sep', el: 'span' },
-  {
-    text: 'videos',
-    className: 'pretext-work-link',
-    el: 'a',
-    href: 'https://andreianmatos.github.io/videos',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-  },
-  { text: ', ', className: 'pretext-work-sep', el: 'span' },
-  {
-    text: 'writings',
-    className: 'pretext-work-link',
-    el: 'a',
-    href: 'writings.html',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-  },
-  { text: ', ', className: 'pretext-work-sep', el: 'span' },
-  {
-    text: 'websites',
-    className: 'pretext-site',
-    el: 'a',
-    href: 'index.html',
-    target: '_blank',
-    rel: 'noopener noreferrer',
-  },
-  { text: '.', className: 'pretext-work-sep', el: 'span' }
 ];
 
 const TEXT_CONTACT_RUNS = [
@@ -227,6 +195,7 @@ const TEXT_CV_WORK_RUNS = [
 ];
 
 let globalLH = 24;
+let bioLH = 24;
 let contactLH = 24;
 let cvBirthLH = 24;
 let cvEduLH = 24;
@@ -235,15 +204,16 @@ let cvResLH = 24;
 let cvWorkLH = 24;
 let modRef = null;
 let mouseX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
+let mouseY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
 let rafPending = false;
+let layoutWantNav = false;
 let fontsDirty = true;
-let lastMousemoveLayoutMs = 0;
-const MOUSEMOVE_LAYOUT_MIN_MS = 90;
-/** Relayout no scroll: rebuild a cada tick de scroll → jitter (sobretudo no fim da página). */
-let scrollLayoutTimer = null;
-const SCROLL_LAYOUT_DEBOUNCE_MS = 200;
-/** ResizeObserver após layout altera alturas → outro RO; coalesce num rAF por frame. */
-let resizeObserverRaf = null;
+let mouseSkewRaf = null;
+let infoGlyphCache = [];
+let lastGlyphScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+const PASS_RADIUS = 62;
+const PASS_FORCE = 11;
+const PASS_EASE = 0.34;
 /** Avanço horizontal após cada fragmento (canvas vs DOM + respiro entre runs). */
 const FRAG_GAP_PX = 1.5;
 const INTER_FRAG_EM = 0.16;
@@ -251,6 +221,15 @@ const INTER_FRAG_EM = 0.16;
 function interFragmentGapPx(mount) {
   const em = parseFloat(getComputedStyle(mount).fontSize) || 16;
   return FRAG_GAP_PX + em * INTER_FRAG_EM;
+}
+
+function wantsMouseSkew() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+    !wantsReducedMotion()
+  );
 }
 
 function wantsReducedMotion() {
@@ -412,6 +391,7 @@ function prepareRunsFor(mod, runs) {
 
 function prepareAllPretextRuns(mod) {
   prepareRunsFor(mod, TEXT_RUNS);
+  prepareRunsFor(mod, TEXT_BIO_RUNS);
   prepareRunsFor(mod, TEXT_CONTACT_RUNS);
   prepareRunsFor(mod, TEXT_CV_BIRTH_RUNS);
   prepareRunsFor(mod, TEXT_CV_EDUCATION_RUNS);
@@ -426,39 +406,16 @@ function resetRunCursors(runs) {
   }
 }
 
-function drawingLayerObstacles() {
-  return Array.from(document.querySelectorAll('#drawings-layer .drawing-item.appeared')).map((el) =>
-    el.getBoundingClientRect()
-  );
-}
-
 function getObstaclesForMain() {
-  const rects = drawingLayerObstacles();
-  const cv = document.getElementById('cv-inline');
-  if (cv?.classList.contains('is-open')) {
-    const r = cv.getBoundingClientRect();
-    if (r.width >= 8 && r.height >= 8) rects.push(r);
-  }
-  const contact = document.getElementById('contact-inline');
-  if (contact?.classList.contains('is-open')) {
-    const r = contact.getBoundingClientRect();
-    if (r.width >= 8 && r.height >= 8) rects.push(r);
-  }
-  return rects;
+  return [];
 }
 
 function getObstaclesForContactPanel() {
-  const rects = drawingLayerObstacles();
-  const cv = document.getElementById('cv-inline');
-  if (cv?.classList.contains('is-open')) {
-    const r = cv.getBoundingClientRect();
-    if (r.width >= 8 && r.height >= 8) rects.push(r);
-  }
-  return rects;
+  return [];
 }
 
 function getObstaclesForCvPanel() {
-  return drawingLayerObstacles();
+  return [];
 }
 
 function applyFontMetricsIfNeeded() {
@@ -468,6 +425,12 @@ function applyFontMetricsIfNeeded() {
     baselineShiftCache.clear();
     syncGlobalMetrics(mainMount);
 
+    const bioMount = document.getElementById('info-bio-lines');
+    if (bioMount) {
+      syncMetricsForRuns(bioMount, TEXT_BIO_RUNS, (v) => {
+        bioLH = v;
+      }, { skipNameShift: true });
+    }
     const cpm = document.getElementById('contact-pretext-lines');
     if (cpm) {
       syncMetricsForRuns(cpm, TEXT_CONTACT_RUNS, (v) => {
@@ -511,20 +474,35 @@ function applyFontMetricsIfNeeded() {
   return true;
 }
 
-function scheduleLayout() {
+function queueLayout() {
   if (rafPending) return;
   rafPending = true;
   requestAnimationFrame(() => {
     rafPending = false;
+    const doNav = layoutWantNav;
+    layoutWantNav = false;
     if (!applyFontMetricsIfNeeded()) return;
-    runLayout();
+    if (doNav) runLayout();
+    else patchMainPretextNavAria();
+    runBioLayout();
     runContactLayout();
     runCvBirthLayout();
     runCvSectionLayout('cv-pretext-education', TEXT_CV_EDUCATION_RUNS, cvEduLH);
     runCvSectionLayout('cv-pretext-workshops', TEXT_CV_WORKSHOPS_RUNS, cvWorkshopsLH);
     runCvSectionLayout('cv-pretext-residencies', TEXT_CV_RESIDENCIES_RUNS, cvResLH);
     runCvSectionLayout('cv-pretext-work', TEXT_CV_WORK_RUNS, cvWorkLH);
+    cacheInfoGlyphs();
+    applyInfoMouseSkew();
   });
+}
+
+function scheduleLayout() {
+  layoutWantNav = true;
+  queueLayout();
+}
+
+function scheduleInfoLayout() {
+  queueLayout();
 }
 
 function centerLineGroups(lines, textRect) {
@@ -589,6 +567,7 @@ function layoutRunsIntoMount(mount, runs, lhStride, options) {
     alignMode = 'center',
     useNameBaseline = true,
     useMouseSkew = true,
+    splitGlyphs = false,
   } = options;
 
   if (!mount || !modRef) return;
@@ -711,21 +690,43 @@ function layoutRunsIntoMount(mount, runs, lhStride, options) {
     row.style.left = `${item.left}px`;
     row.style.transform = `translateX(${skew}px)`;
     const inner = createInnerEl(item.run, item.text);
+    if (splitGlyphs) wrapTextAsGlyphs(inner);
     row.appendChild(inner);
     frag.appendChild(row);
   }
   mount.replaceChildren(frag);
 }
 
-function patchMainPretextToggleAria() {
-  const cvOpen = document.getElementById('cv-inline')?.classList.contains('is-open');
-  const contactOpen = document.getElementById('contact-inline')?.classList.contains('is-open');
-  document.getElementById('cv-inline-toggle')?.setAttribute('aria-expanded', cvOpen ? 'true' : 'false');
-  document.getElementById('contact-inline-toggle')?.setAttribute('aria-expanded', contactOpen ? 'true' : 'false');
+function patchMainPretextNavAria() {
+  const nav = currentNav();
+  document.querySelectorAll('.pretext-nav-link[data-nav]').forEach((el) => {
+    const current = el.dataset.nav === nav;
+    el.classList.toggle('is-current', current);
+    if (current) el.setAttribute('aria-current', 'page');
+    else el.removeAttribute('aria-current');
+  });
+}
+
+function runBioLayout() {
+  const panel = document.getElementById('info-inline');
+  const mount = document.getElementById('info-bio-lines');
+  if (!mount) return;
+  if (!panel?.classList.contains('is-open')) {
+    mount.replaceChildren();
+    mount.style.minHeight = '';
+    return;
+  }
+  layoutRunsIntoMount(mount, TEXT_BIO_RUNS, bioLH, {
+    obstacleGetter: getObstaclesForContactPanel,
+    alignMode: 'left',
+    useNameBaseline: false,
+    useMouseSkew: false,
+    splitGlyphs: true,
+  });
 }
 
 function runContactLayout() {
-  const panel = document.getElementById('contact-inline');
+  const panel = document.getElementById('info-inline');
   const mount = document.getElementById('contact-pretext-lines');
   if (!mount) return;
   if (!panel?.classList.contains('is-open')) {
@@ -738,11 +739,12 @@ function runContactLayout() {
     alignMode: 'left',
     useNameBaseline: false,
     useMouseSkew: false,
+    splitGlyphs: true,
   });
 }
 
 function runCvBirthLayout() {
-  const cvPanel = document.getElementById('cv-inline');
+  const cvPanel = document.getElementById('info-inline');
   const mount = document.getElementById('cv-pretext-birth');
   if (!mount) return;
   if (!cvPanel?.classList.contains('is-open')) {
@@ -755,11 +757,12 @@ function runCvBirthLayout() {
     alignMode: 'left',
     useNameBaseline: false,
     useMouseSkew: false,
+    splitGlyphs: true,
   });
 }
 
 function runCvSectionLayout(mountId, runs, lhStride) {
-  const cvPanel = document.getElementById('cv-inline');
+  const cvPanel = document.getElementById('info-inline');
   const mount = document.getElementById(mountId);
   if (!mount) return;
   if (!cvPanel?.classList.contains('is-open')) {
@@ -778,6 +781,88 @@ function runCvSectionLayout(mountId, runs, lhStride) {
     alignMode: 'left',
     useNameBaseline: false,
     useMouseSkew: false,
+    splitGlyphs: true,
+  });
+}
+
+function wrapTextAsGlyphs(el) {
+  const raw = el.textContent ?? '';
+  if (!raw) return;
+  el.textContent = '';
+  for (const ch of raw) {
+    const s = document.createElement('span');
+    s.className = 'pretext-glyph';
+    s.textContent = ch === ' ' ? '\u00a0' : ch;
+    el.appendChild(s);
+  }
+}
+
+function cacheInfoGlyphs() {
+  infoGlyphCache = [];
+  if (!isInfoOpen()) return;
+  const nodes = document.querySelectorAll('#info-inline .pretext-glyph');
+  for (let i = 0; i < nodes.length; i++) {
+    const el = nodes[i];
+    el.style.transform = '';
+    el.style.removeProperty('text-shadow');
+    const r = el.getBoundingClientRect();
+    infoGlyphCache.push({
+      el,
+      x: r.left + r.width * 0.5,
+      y: r.top + r.height * 0.5,
+      tx: 0,
+      ty: 0,
+    });
+  }
+  lastGlyphScrollY = window.scrollY;
+}
+
+function applyInfoMouseSkew() {
+  if (!isInfoOpen() || !wantsMouseSkew()) {
+    mouseSkewRaf = null;
+    return;
+  }
+  if (infoGlyphCache.length === 0) cacheInfoGlyphs();
+  const r2 = PASS_RADIUS * PASS_RADIUS;
+  let moving = false;
+  for (let i = 0; i < infoGlyphCache.length; i++) {
+    const g = infoGlyphCache[i];
+    const dx = g.x - mouseX;
+    const dy = g.y - mouseY;
+    const d2 = dx * dx + dy * dy;
+    let tx = 0;
+    let ty = 0;
+    if (d2 < r2) {
+      const d = Math.sqrt(d2) || 1;
+      const t = 1 - d / PASS_RADIUS;
+      const e = t * t * t;
+      tx = (dx / d) * PASS_FORCE * e;
+      ty = (dy / d) * PASS_FORCE * 0.35 * e;
+    }
+    g.tx += (tx - g.tx) * PASS_EASE;
+    g.ty += (ty - g.ty) * PASS_EASE;
+    if (Math.abs(g.tx) > 0.08 || Math.abs(g.ty) > 0.08) {
+      moving = true;
+      g.el.style.transform = `translate(${g.tx.toFixed(2)}px, ${g.ty.toFixed(2)}px)`;
+    } else {
+      g.tx = 0;
+      g.ty = 0;
+      if (g.el.style.transform) g.el.style.transform = '';
+    }
+  }
+  if (moving && mouseSkewRaf == null) {
+    mouseSkewRaf = requestAnimationFrame(() => {
+      mouseSkewRaf = null;
+      applyInfoMouseSkew();
+    });
+  }
+}
+
+function requestInfoMouseSkew() {
+  if (mouseSkewRaf != null) return;
+  mouseSkewRaf = requestAnimationFrame(() => {
+    mouseSkewRaf = null;
+    applyInfoMouseSkew();
   });
 }
 
@@ -797,25 +882,12 @@ function createInnerEl(run, text) {
     b.className = run.className;
     b.textContent = text;
     if (run.id) b.id = run.id;
-    b.setAttribute('aria-expanded', 'false');
-    if (run.id === 'cv-inline-toggle') {
-      b.setAttribute('aria-controls', 'cv-inline');
-      b.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof window.toggleCvPanelFromUi === 'function') {
-          window.toggleCvPanelFromUi();
-        }
-      });
-    } else if (run.id === 'contact-inline-toggle') {
-      b.setAttribute('aria-controls', 'contact-inline');
-      b.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof window.toggleContactPanelFromUi === 'function') {
-          window.toggleContactPanelFromUi();
-        }
-      });
+    if (run.nav) {
+      b.dataset.nav = run.nav;
+      if (run.nav === currentNav()) {
+        b.classList.add('is-current');
+        b.setAttribute('aria-current', 'page');
+      }
     }
     return b;
   }
@@ -846,12 +918,12 @@ function runLayout() {
 
   layoutRunsIntoMount(mount, TEXT_RUNS, globalLH, {
     obstacleGetter: getObstaclesForMain,
-    alignMode: 'center',
+    alignMode: 'left',
     useNameBaseline: true,
-    useMouseSkew: true,
+    useMouseSkew: false,
   });
 
-  patchMainPretextToggleAria();
+  patchMainPretextNavAria();
 
   fitPretextToViewport(mount);
 
@@ -865,12 +937,10 @@ function fitPretextToViewport(mount) {
   const outer = mount.closest('.pretext-fit-outer');
   if (!outer) return;
 
-  const cvOpen = document.getElementById('cv-inline')?.classList.contains('is-open');
-  const contactOpen = document.getElementById('contact-inline')?.classList.contains('is-open');
   mount.style.transform = '';
   outer.style.height = '';
 
-  if (cvOpen || contactOpen) return;
+  if (isInfoOpen() || isWorksOpen()) return;
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -884,7 +954,7 @@ function fitPretextToViewport(mount) {
       let s = (avail / rawH) * 0.98;
       if (s < FIT_MIN_SCALE) s = FIT_MIN_SCALE;
 
-      mount.style.transformOrigin = 'top center';
+      mount.style.transformOrigin = 'top left';
       mount.style.transform = `scale(${s})`;
       outer.style.height = `${rawH * s}px`;
     });
@@ -923,55 +993,72 @@ async function boot() {
     },
     { passive: true }
   );
-  window.addEventListener(
-    'mousemove',
-    (e) => {
-      mouseX = e.clientX;
-      const t = performance.now();
-      if (t - lastMousemoveLayoutMs < MOUSEMOVE_LAYOUT_MIN_MS) return;
-      lastMousemoveLayoutMs = t;
+  window.visualViewport?.addEventListener(
+    'resize',
+    () => {
+      fontsDirty = true;
       scheduleLayout();
     },
     { passive: true }
   );
+  window.addEventListener(
+    'mousemove',
+    (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!isInfoOpen() || !wantsMouseSkew()) return;
+      requestInfoMouseSkew();
+    },
+    { passive: true }
+  );
+  mount.addEventListener(
+    'pointerdown',
+    (e) => {
+      const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+      const btn = el?.closest('.pretext-nav-link[data-nav]');
+      if (!btn || !mount.contains(btn)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const nav = btn.dataset.nav;
+      if (nav && typeof window.setSiteView === 'function') {
+        window.setSiteView(nav);
+      }
+    },
+    true
+  );
   function onWindowScrollForLayout() {
-    if (scrollLayoutTimer != null) return;
-    scrollLayoutTimer = window.setTimeout(() => {
-      scrollLayoutTimer = null;
-      scheduleLayout();
-    }, SCROLL_LAYOUT_DEBOUNCE_MS);
+    const y = window.scrollY;
+    const dy = y - lastGlyphScrollY;
+    lastGlyphScrollY = y;
+    if (dy && infoGlyphCache.length) {
+      for (let i = 0; i < infoGlyphCache.length; i++) {
+        infoGlyphCache[i].y -= dy;
+      }
+      requestInfoMouseSkew();
+    }
   }
   window.addEventListener('scroll', onWindowScrollForLayout, { passive: true, capture: true });
   window.addEventListener(
     'scrollend',
     () => {
-      if (scrollLayoutTimer != null) {
-        window.clearTimeout(scrollLayoutTimer);
-        scrollLayoutTimer = null;
-      }
-      scheduleLayout();
+      if (isInfoOpen()) cacheInfoGlyphs();
     },
     { passive: true, capture: true }
   );
   window.addEventListener('pretext-dirty', scheduleLayout);
 
-  function onPretextResizeObserved() {
-    if (resizeObserverRaf != null) return;
-    resizeObserverRaf = requestAnimationFrame(() => {
-      resizeObserverRaf = null;
-      scheduleLayout();
-    });
-  }
-  const ro = new ResizeObserver(onPretextResizeObserved);
-  ro.observe(mount);
+  const roNav = new ResizeObserver(() => scheduleLayout());
+  roNav.observe(mount);
   const tb = document.querySelector('.text-block');
-  if (tb) ro.observe(tb);
-  const cv = document.getElementById('cv-inline');
-  if (cv) ro.observe(cv);
-  const contactPanel = document.getElementById('contact-inline');
-  if (contactPanel) ro.observe(contactPanel);
+  if (tb) roNav.observe(tb);
+
+  const roInfo = new ResizeObserver(() => scheduleInfoLayout());
+  const infoPanel = document.getElementById('info-inline');
+  if (infoPanel) roInfo.observe(infoPanel);
   const contactPretext = document.getElementById('contact-pretext-lines');
-  if (contactPretext) ro.observe(contactPretext);
+  if (contactPretext) roInfo.observe(contactPretext);
+  const bioPretext = document.getElementById('info-bio-lines');
+  if (bioPretext) roInfo.observe(bioPretext);
   for (const id of [
     'cv-pretext-birth',
     'cv-pretext-education',
@@ -980,7 +1067,7 @@ async function boot() {
     'cv-pretext-work',
   ]) {
     const el = document.getElementById(id);
-    if (el) ro.observe(el);
+    if (el) roInfo.observe(el);
   }
 
   scheduleLayout();
