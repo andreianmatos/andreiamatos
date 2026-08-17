@@ -687,9 +687,11 @@ async function loadWorksThumbsIndex() {
 
 async function findWorksThumb(dir, index) {
     const fromIndex = index[dir];
+    const listed = await listWorksFolderImages(dir);
     const known = [
-        ...(await listWorksFolderImages(dir)),
         ...(Array.isArray(fromIndex) ? fromIndex : fromIndex ? [fromIndex] : []),
+        ...listed.filter((name) => /^thumb\./i.test(name)),
+        ...listed,
     ];
     const encodedDir = encodeAssetPath(dir);
     const tried = new Set();
@@ -699,6 +701,7 @@ async function findWorksThumb(dir, index) {
         const hit = await probeImage(`${encodedDir}/${encodeURIComponent(name)}`);
         if (hit) return hit;
     }
+    if (!known.length && !isLocalHost()) return null;
     for (const ext of WORKS_THUMB_EXTS) {
         const name = `thumb.${ext}`;
         if (tried.has(name)) continue;
@@ -719,6 +722,9 @@ function applyWorksThumb(entry, url) {
         img = document.createElement('img');
         img.className = 'works-thumb';
         img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.draggable = false;
         entry.insertBefore(img, entry.firstChild);
     }
     img.src = url;

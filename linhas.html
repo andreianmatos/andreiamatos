@@ -12,7 +12,6 @@
             background-color: #f4f1ea;
             background-image: radial-gradient(#ddd9ce 1.2px, transparent 1.2px);
             background-size: 24px 24px;
-            background-attachment: fixed;
         }
         html, body {
             padding: 0;
@@ -29,12 +28,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+            padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
         }
         #book {
             flex: 0 0 auto;
             background: transparent;
             overflow: hidden;
+            touch-action: none;
             filter: drop-shadow(0 10px 18px rgba(40, 30, 18, 0.1)) drop-shadow(0 28px 54px rgba(40, 30, 18, 0.18));
             opacity: 0;
             transition: opacity 0.35s ease;
@@ -51,6 +51,11 @@
         .stf__block {
             box-shadow: none;
         }
+        @media (max-width: 800px) {
+            html, body, .stage {
+                background-attachment: scroll;
+            }
+        }
     </style>
 </head>
 <body>
@@ -61,6 +66,17 @@
     <script type="module">
         const PDF_SRC = 'works/drawings/Linhas/linhas.pdf';
         const FIRST_PAGE = 2;
+        const PAGE_RATIO = 570 / 726;
+        const NARROW = 720;
+
+        function showPdfFallback() {
+            document.body.replaceChildren();
+            const frame = document.createElement('iframe');
+            frame.src = `${PDF_SRC}#page=${FIRST_PAGE}`;
+            frame.title = 'Linhas';
+            frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;background:#f4f1ea';
+            document.body.append(frame);
+        }
 
         try {
             const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
@@ -70,13 +86,16 @@
             const pdf = await pdfjsLib.getDocument(PDF_SRC).promise;
             const wrap = document.getElementById('book');
             const urls = [];
+            const isTouch = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 800;
 
             async function renderPdfPage(num) {
                 const page = await pdf.getPage(num);
                 const base = page.getViewport({ scale: 1 });
-                const cssPageH = Math.min(window.innerHeight * 0.82, window.innerWidth * 0.5);
-                const dpr = Math.min(window.devicePixelRatio || 1, 3);
-                const target = Math.min(3200, Math.max(2000, Math.round(cssPageH * dpr * 2)));
+                const cssPageH = Math.min(window.innerHeight * 0.88, window.innerWidth / (isTouch && window.innerWidth < NARROW ? PAGE_RATIO : PAGE_RATIO * 2));
+                const dpr = Math.min(window.devicePixelRatio || 1, isTouch ? 2 : 3);
+                const cap = isTouch ? 1600 : 2800;
+                const floor = isTouch ? 900 : 1800;
+                const target = Math.min(cap, Math.max(floor, Math.round(cssPageH * dpr * (isTouch ? 1.35 : 2))));
                 const viewport = page.getViewport({ scale: target / base.height });
                 const canvas = document.createElement('canvas');
                 canvas.width = Math.round(viewport.width);
@@ -89,13 +108,18 @@
                 await page.render({
                     canvasContext: ctx,
                     viewport,
-                    intent: 'print',
+                    intent: isTouch ? 'display' : 'print',
                 }).promise;
                 const url = await new Promise((resolve) => {
-                    canvas.toBlob(
-                        (blob) => resolve(URL.createObjectURL(blob)),
-                        'image/png'
-                    );
+                    const type = isTouch ? 'image/jpeg' : 'image/png';
+                    const quality = isTouch ? 0.9 : undefined;
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(URL.createObjectURL(blob));
+                            return;
+                        }
+                        resolve(canvas.toDataURL(type, quality));
+                    }, type, quality);
                 });
                 page.cleanup();
                 canvas.width = 0;
@@ -107,37 +131,53 @@
             urls.push(await renderPdfPage(FIRST_PAGE));
             if (FIRST_PAGE + 1 <= LAST_PAGE) urls.push(await renderPdfPage(FIRST_PAGE + 1));
 
-            const PAGE_RATIO = 570 / 726;
-
             function fitBookBox() {
                 const maxW = wrap.parentElement.clientWidth;
                 const maxH = wrap.parentElement.clientHeight;
+                const portrait = maxW < NARROW;
                 let pageH = maxH;
                 let pageW = pageH * PAGE_RATIO;
-                if (pageW * 2 > maxW) {
-                    pageW = maxW / 2;
-                    pageH = pageW / PAGE_RATIO;
+                if (portrait) {
+                    if (pageW > maxW) {
+                        pageW = maxW;
+                        pageH = pageW / PAGE_RATIO;
+                    }
+                    wrap.style.width = `${Math.floor(pageW)}px`;
+                    wrap.style.height = `${Math.floor(pageH)}px`;
+                } else {
+                    if (pageW * 2 > maxW) {
+                        pageW = maxW / 2;
+                        pageH = pageW / PAGE_RATIO;
+                    }
+                    wrap.style.width = `${Math.floor(pageW * 2)}px`;
+                    wrap.style.height = `${Math.floor(pageH)}px`;
                 }
-                pageW = Math.floor(pageW);
-                pageH = Math.floor(pageH);
-                wrap.style.width = `${pageW * 2}px`;
-                wrap.style.height = `${pageH}px`;
-                return { pageW, pageH };
+                return { pageW: Math.floor(pageW), pageH: Math.floor(pageH), portrait };
             }
 
-            const { pageW, pageH } = fitBookBox();
+            if (typeof St === 'undefined' || !St.PageFlip) {
+                throw new Error('PageFlip missing');
+            }
+
+            const { pageW, pageH, portrait } = fitBookBox();
             const pageFlip = new St.PageFlip(wrap, {
-                width: pageW,
-                height: pageH,
-                size: 'fixed',
-                usePortrait: false,
+                width: Math.max(pageW, 1),
+                height: Math.max(pageH, 1),
+                size: 'stretch',
+                minWidth: portrait ? Math.max(120, Math.floor(pageW * 0.55)) : 200,
+                maxWidth: 2400,
+                minHeight: 160,
+                maxHeight: 2400,
+                usePortrait: true,
+                showCover: false,
                 drawShadow: true,
                 maxShadowOpacity: 0.45,
-                flippingTime: 800,
+                flippingTime: 700,
                 useMouseEvents: true,
-                swipeDistance: 20,
-                showPageCorners: true,
+                swipeDistance: 18,
+                showPageCorners: !isTouch,
                 disableFlipByClick: false,
+                mobileScrollSupport: false,
             });
             const bookCanvas = wrap.querySelector('canvas');
             if (bookCanvas) {
@@ -162,25 +202,47 @@
             pageFlip.updateFromImages(urls.slice());
             const pageCount = urls.length;
 
+            function lastFlipIndex() {
+                const portraitNow = wrap.parentElement.clientWidth < NARROW;
+                return portraitNow ? pageCount - 1 : pageCount - 2;
+            }
+
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'ArrowRight' || e.key === ' ') {
                     e.preventDefault();
-                    if (pageFlip.getCurrentPageIndex() < pageCount - 2) pageFlip.flipNext();
+                    if (pageFlip.getCurrentPageIndex() < lastFlipIndex()) pageFlip.flipNext();
                 } else if (e.key === 'ArrowLeft') {
                     e.preventDefault();
                     pageFlip.flipPrev();
                 }
             });
-            window.addEventListener('resize', () => {
+
+            let lastW = window.innerWidth;
+            let resizeTimer = 0;
+            function refitBook() {
+                const w = window.innerWidth;
+                if (Math.abs(w - lastW) < 12 && wrap.clientHeight > 40) {
+                    return;
+                }
+                lastW = w;
                 fitBookBox();
                 try {
                     pageFlip.update();
                 } catch (_) {
                     /* ignore */
                 }
+            }
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = window.setTimeout(refitBook, 220);
+            });
+            window.addEventListener('orientationchange', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = window.setTimeout(refitBook, 320);
             });
         } catch (err) {
             console.error(err);
+            showPdfFallback();
         }
     </script>
 </body>
