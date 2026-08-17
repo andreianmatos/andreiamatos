@@ -69,8 +69,8 @@ const TEXT_RUNS = [
 
 const TEXT_BIO_RUNS = [
   {
-    text: 'Computer scientist and artist',
-    className: 'pretext-blurb',
+    text: 'Computer scientist and artist.',
+    className: 'pretext-label',
     el: 'span',
     i18n: 'bio.line',
     breakBefore: true,
@@ -99,12 +99,13 @@ const TEXT_CONTACT_RUNS = [
     target: '_blank',
     rel: 'noopener',
   },
+  { text: '.', className: 'pretext-plain', el: 'span' },
 ];
 
 const TEXT_CV_BIRTH_RUNS = [
   {
-    text: 'born 1999 in Viseu, based in Lisboa',
-    className: 'pretext-meta',
+    text: 'Born in 1999 in Viseu, currently based in Lisboa.',
+    className: 'pretext-label',
     el: 'span',
     i18n: 'cv.birth',
   },
