@@ -600,7 +600,7 @@ a {
     width: 100%;
     aspect-ratio: 4 / 3;
     object-fit: cover;
-    background: rgba(10, 10, 10, 0.05);
+    background: #f4f1ea;
 }
 #works-inline .works-entry-body {
     display: block;

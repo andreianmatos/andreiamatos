@@ -2,7 +2,6 @@ const CONFIG = {
     floatsEnabled: true,
     /** Width as a fraction of the shorter screen edge (`vmin`). Same on every device. */
     pieces: { minScale: 0.15, maxScale: 0.26 },
-    workFloats: { minScale: 0.14, maxScale: 0.22 },
     paths: { items: 'main/' },
     /** Movimento flutuante: vx/vy por frame (~60fps). Lento — menu, não dança. */
     drift: {
@@ -16,14 +15,6 @@ const CONFIG = {
     /** Zona livre à volta do título / nav (px). */
     titleKeepoutPad: 28,
 };
-
-const WORK_FLOATS = [
-    { path: 'work/ceramics.png', href: 'https://andreianmatos.github.io/ceramics', label: 'ceramics' },
-    { path: 'work/images.png', href: 'https://andreianmatos.github.io/images', label: 'images' },
-    { path: 'work/drawings.png', href: 'https://andreianmatos.github.io/drawings', label: 'drawings' },
-    { path: 'work/videos.gif', href: 'https://andreianmatos.github.io/videos', label: 'videos' },
-    { path: 'work/writings.png', href: 'writings.html', label: 'writings' },
-];
 
 const FLOATS_MANIFEST = 'main/floats.json';
 const SIZE_PRESETS = {
@@ -630,11 +621,132 @@ function setPanelOpen(panelId, bodyClass, open) {
     }
 }
 
+const WORKS_IMAGE_RE = /\.(jpe?g|png|webp|gif)$/i;
+const WORKS_THUMB_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+let worksThumbsPromise = null;
+
+function encodeAssetPath(path) {
+    return String(path)
+        .split('/')
+        .filter((part) => part.length > 0)
+        .map((part) => encodeURIComponent(part))
+        .join('/');
+}
+
+function probeImage(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = () => resolve(null);
+        img.src = url;
+    });
+}
+
+function isLocalHost() {
+    const host = location.hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '';
+}
+
+function imageNamesFromListingHtml(html) {
+    const names = [];
+    const re = /href=["']([^"']+)["']/gi;
+    let match;
+    while ((match = re.exec(html))) {
+        const href = match[1].replace(/&amp;/g, '&').split('?')[0].split('#')[0];
+        const name = decodeURIComponent(href.split('/').filter(Boolean).pop() || '');
+        if (!name || name === '..' || name.startsWith('.')) continue;
+        if (WORKS_IMAGE_RE.test(name)) names.push(name);
+    }
+    return [...new Set(names)];
+}
+
+async function listWorksFolderImages(dir) {
+    if (!isLocalHost()) return [];
+    try {
+        const res = await fetch(`${encodeAssetPath(dir)}/`, { cache: 'no-store' });
+        if (!res.ok) return [];
+        const text = await res.text();
+        const trimmed = text.trimStart();
+        if (trimmed.startsWith('{') || trimmed.startsWith('[')) return [];
+        return imageNamesFromListingHtml(text);
+    } catch {
+        return [];
+    }
+}
+
+async function loadWorksThumbsIndex() {
+    try {
+        const res = await fetch('works/thumbs.json', { cache: 'no-store' });
+        if (!res.ok) return {};
+        const data = await res.json();
+        return data && typeof data === 'object' ? data : {};
+    } catch {
+        return {};
+    }
+}
+
+async function findWorksThumb(dir, index) {
+    const fromIndex = index[dir];
+    const known = [
+        ...(await listWorksFolderImages(dir)),
+        ...(Array.isArray(fromIndex) ? fromIndex : fromIndex ? [fromIndex] : []),
+    ];
+    const encodedDir = encodeAssetPath(dir);
+    const tried = new Set();
+    for (const name of known) {
+        if (!WORKS_IMAGE_RE.test(name) || tried.has(name)) continue;
+        tried.add(name);
+        const hit = await probeImage(`${encodedDir}/${encodeURIComponent(name)}`);
+        if (hit) return hit;
+    }
+    for (const ext of WORKS_THUMB_EXTS) {
+        const name = `thumb.${ext}`;
+        if (tried.has(name)) continue;
+        tried.add(name);
+        const hit = await probeImage(`${encodedDir}/${name}`);
+        if (hit) return hit;
+    }
+    return null;
+}
+
+function applyWorksThumb(entry, url) {
+    let img = entry.querySelector(':scope > .works-thumb');
+    if (!url) {
+        img?.remove();
+        return;
+    }
+    if (!img) {
+        img = document.createElement('img');
+        img.className = 'works-thumb';
+        img.alt = '';
+        entry.insertBefore(img, entry.firstChild);
+    }
+    img.src = url;
+}
+
+function initWorksThumbs() {
+    if (worksThumbsPromise) return worksThumbsPromise;
+    worksThumbsPromise = (async () => {
+        const entries = document.querySelectorAll('#works-inline .works-entry[data-thumb]');
+        if (!entries.length) return;
+        const index = await loadWorksThumbsIndex();
+        await Promise.all(
+            [...entries].map(async (entry) => {
+                const dir = (entry.dataset.thumb || '').replace(/\\/g, '/').replace(/\/+$/, '');
+                if (!dir) return;
+                applyWorksThumb(entry, await findWorksThumb(dir, index));
+            })
+        );
+    })();
+    return worksThumbsPromise;
+}
+
 function setSiteView(view) {
     if (view === 'index') view = 'home';
     if (view === 'info') view = 'about';
     setPanelOpen('info-inline', 'info-open', view === 'about');
     setPanelOpen('works-inline', 'works-open', view === 'works');
+    if (view === 'works') void initWorksThumbs();
     if (view === 'home') {
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
@@ -747,8 +859,7 @@ function attachPointerHandlers(container, item) {
 
 function createPieceElement(imgObj, parent, opts = {}) {
     const { extraClass = '', linkHref = null, label = '', scale: scaleOpt, role = '', washIndex = 0 } = opts;
-    const isWork = /\bwork-float\b/.test(extraClass);
-    const range = isWork ? CONFIG.workFloats : CONFIG.pieces;
+    const range = CONFIG.pieces;
     const mn = opts.minScale ?? range.minScale;
     const mx = opts.maxScale ?? range.maxScale;
 
@@ -880,40 +991,6 @@ async function initFloating() {
             if (staggerMs === 0) reveal();
             else setTimeout(reveal, index * staggerMs);
         });
-    });
-}
-
-async function initWorkFloats() {
-    const layer = document.getElementById('drawings-layer');
-    if (!layer) return;
-
-    const staggerMs = isMobile() ? 0 : 52;
-    const baseDelay = isMobile() ? 0 : 100;
-    const loaded = await Promise.all(
-        WORK_FLOATS.map(async (def) => {
-            const img = await loadAssetImage(def.path);
-            return img ? { img, def } : null;
-        })
-    );
-    loaded.forEach((entry, index) => {
-        if (!entry) return;
-        const { img, def } = entry;
-        createPieceElement(img, layer, {
-            extraClass: 'work-float',
-            linkHref: def.href,
-            label: def.label,
-        });
-        const el = floatingItems[floatingItems.length - 1]?.el;
-        if (!el) return;
-        const reveal = () => {
-            el.classList.add('appeared');
-            markItemPhysicsReady(el);
-        };
-        if (staggerMs === 0) {
-            reveal();
-        } else {
-            setTimeout(reveal, baseDelay + index * staggerMs);
-        }
     });
 }
 
