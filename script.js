@@ -238,29 +238,31 @@ function isSizedGiant(def) {
     return (def?.scale || 0) >= SIZE_PRESETS.giant - 0.001;
 }
 
-function planFloatLayout(loaded) {
-    const preferred = loaded.filter((e) => isSizedGiant(e.def));
-    const giantPool = shuffleInPlace(preferred.length ? preferred : loaded.filter((e) => canWash(e.def)));
+function planFloatLayout(defs) {
+    const preferred = defs.filter((d) => isSizedGiant(d));
+    const giantPool = shuffleInPlace(
+        preferred.length ? preferred.slice() : defs.filter((d) => canWash(d))
+    );
     const giantN = pickGiantCount(giantPool.length);
     const giants = giantPool.slice(0, giantN);
     const giantSet = new Set(giants);
-    const rest = shuffleInPlace(loaded.filter((e) => !giantSet.has(e)));
-    const n = pickAppearCount(loaded.length);
+    const rest = shuffleInPlace(defs.filter((d) => !giantSet.has(d)));
+    const n = pickAppearCount(defs.length);
     const restN = Math.max(0, Math.min(rest.length, n - giants.length));
     const mobile = isMobile();
     const picked = giants
-        .map((entry) => ({ entry, role: 'wash' }))
-        .concat(rest.slice(0, restN).map((entry) => ({ entry, role: null })));
+        .map((def) => ({ def, role: 'wash' }))
+        .concat(rest.slice(0, restN).map((def) => ({ def, role: null })));
 
     return picked.map((slot, i) => {
-        const entry = slot.entry;
-        const base = entry.def.scale || 0.18;
-        const max = entry.def.maxScale || base;
-        if (slot.role === 'wash' || (i === 0 && canWash(entry.def))) {
+        const def = slot.def;
+        const base = def.scale || 0.18;
+        const max = def.maxScale || base;
+        if (slot.role === 'wash' || (i === 0 && canWash(def))) {
             const hi = Math.min(max, 2.15);
             const lo = Math.min(hi, Math.max(base, SIZE_PRESETS.enormous));
             return {
-                entry,
+                def,
                 role: 'wash',
                 washIndex: i,
                 scale: lerpScale(lo, hi, 0.35 + Math.random() * 0.65),
@@ -270,7 +272,7 @@ function planFloatLayout(loaded) {
         const restI = i - giants.length;
         if (restI <= (mobile ? 0 : 1)) {
             return {
-                entry,
+                def,
                 role: 'anchor',
                 scale: lerpScale(base, Math.min(max, 0.42), 0.4 + Math.random() * 0.6),
                 move: false,
@@ -278,7 +280,7 @@ function planFloatLayout(loaded) {
         }
         if (restI <= (mobile ? 2 : 4)) {
             return {
-                entry,
+                def,
                 role: 'floater',
                 scale: lerpScale(base, Math.min(max, 0.32), Math.random()),
                 move: Math.random() < 0.55,
@@ -286,7 +288,7 @@ function planFloatLayout(loaded) {
             };
         }
         return {
-            entry,
+            def,
             role: 'accent',
             scale: lerpScale(Math.min(base, max), Math.min(max, 0.18), Math.random() * 0.5),
             move: Math.random() < 0.3,
@@ -662,18 +664,20 @@ function syncSiteNavCurrent(view) {
 }
 window.setSiteView = setSiteView;
 
-function loadImageUrl(url) {
+function loadImageUrl(url, opts = {}) {
     return new Promise((res) => {
         const img = new Image();
+        img.decoding = 'async';
+        if (opts.priority) img.fetchPriority = 'high';
         img.onload = () => res(img);
         img.onerror = () => res(null);
         img.src = url;
     });
 }
 
-async function loadAssetImage(relativePath) {
+async function loadAssetImage(relativePath, opts = {}) {
     for (const url of candidateAssetUrls(relativePath)) {
-        const img = await loadImageUrl(url);
+        const img = await loadImageUrl(url, opts);
         if (img) return img;
     }
     return null;
@@ -753,6 +757,7 @@ function createPieceElement(imgObj, parent, opts = {}) {
     const imgEl = document.createElement('img');
     imgEl.src = imgObj.src;
     imgEl.alt = label;
+    imgEl.decoding = 'async';
     imgEl.draggable = false;
     imgEl.setAttribute('draggable', 'false');
     container.appendChild(imgEl);
@@ -845,42 +850,36 @@ async function initFloating() {
     const pieceDefs = await loadFloatPieceDefs();
     if (!pieceDefs.length) return;
 
-    const results = await Promise.all(
-        pieceDefs.map(async (def) => {
-            const img = await loadAssetImage(`${CONFIG.paths.items}${def.file}`);
-            return img ? { img, def } : null;
-        })
-    );
-    const loaded = results.filter(Boolean);
-    const plans = planFloatLayout(loaded);
+    const plans = planFloatLayout(pieceDefs);
     const washCount = plans.filter((p) => p.role === 'wash').length;
     const slots = slotPositions(Math.max(0, plans.length - washCount));
     const staggerMs = isMobile() ? 0 : 48;
     let slotI = 0;
     plans.forEach((plan, index) => {
-        const file = plan.entry.def.file;
+        const file = plan.def.file;
         const slot = plan.role === 'wash' ? null : slots[slotI++];
-        createPieceElement(plan.entry.img, layer, {
-            label: file.replace(/\.[^.]+$/i, '').replace(/_/g, ' '),
-            fixedScale: plan.scale,
-            move: plan.move,
-            speed: plan.speed,
-            role: plan.role,
-            washIndex: plan.washIndex,
-            x: slot?.x,
-            y: slot?.y,
+        const priority = plan.role === 'wash' || index < 4;
+        void loadAssetImage(`${CONFIG.paths.items}${file}`, { priority }).then((img) => {
+            if (!img) return;
+            createPieceElement(img, layer, {
+                label: file.replace(/\.[^.]+$/i, '').replace(/_/g, ' '),
+                fixedScale: plan.scale,
+                move: plan.move,
+                speed: plan.speed,
+                role: plan.role,
+                washIndex: plan.washIndex,
+                x: slot?.x,
+                y: slot?.y,
+            });
+            const el = floatingItems[floatingItems.length - 1]?.el;
+            if (!el) return;
+            const reveal = () => {
+                el.classList.add('appeared');
+                markItemPhysicsReady(el);
+            };
+            if (staggerMs === 0) reveal();
+            else setTimeout(reveal, index * staggerMs);
         });
-        const el = floatingItems[floatingItems.length - 1]?.el;
-        if (!el) return;
-        const reveal = () => {
-            el.classList.add('appeared');
-            markItemPhysicsReady(el);
-        };
-        if (staggerMs === 0) {
-            reveal();
-        } else {
-            setTimeout(reveal, index * staggerMs);
-        }
     });
 }
 
