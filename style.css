@@ -272,6 +272,9 @@ img {
 .pretext-name.is-current {
     color: #6b0a0a;
 }
+.pretext-name.is-current .pretext-glyph {
+    color: #6b0a0a;
+}
 .pretext-name:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
@@ -349,6 +352,9 @@ img {
 }
 
 .pretext-nav-link.is-current {
+    color: #6b0a0a;
+}
+.pretext-nav-link.is-current .pretext-glyph {
     color: #6b0a0a;
 }
 

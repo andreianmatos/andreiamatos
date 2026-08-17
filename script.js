@@ -234,8 +234,13 @@ function canWash(def) {
     return (def?.maxScale || 0) >= SIZE_PRESETS.enormous - 0.001;
 }
 
+function isSizedGiant(def) {
+    return (def?.scale || 0) >= SIZE_PRESETS.giant - 0.001;
+}
+
 function planFloatLayout(loaded) {
-    const giantPool = shuffleInPlace(loaded.filter((e) => canWash(e.def)));
+    const preferred = loaded.filter((e) => isSizedGiant(e.def));
+    const giantPool = shuffleInPlace(preferred.length ? preferred : loaded.filter((e) => canWash(e.def)));
     const giantN = pickGiantCount(giantPool.length);
     const giants = giantPool.slice(0, giantN);
     const giantSet = new Set(giants);
@@ -636,8 +641,24 @@ function setSiteView(view) {
     if (location.hash) {
         history.replaceState(null, '', `${location.pathname}${location.search}`);
     }
+    syncSiteNavCurrent(view);
     window.dispatchEvent(new Event('site-view-change'));
-    requestAnimationFrame(() => notifyPretextDirty());
+}
+
+function syncSiteNavCurrent(view) {
+    const nav =
+        view ||
+        (document.body.classList.contains('works-open')
+            ? 'works'
+            : document.body.classList.contains('info-open')
+              ? 'about'
+              : 'home');
+    document.querySelectorAll('.pretext-nav-link[data-nav]').forEach((el) => {
+        const current = el.dataset.nav === nav;
+        el.classList.toggle('is-current', current);
+        if (current) el.setAttribute('aria-current', 'page');
+        else el.removeAttribute('aria-current');
+    });
 }
 window.setSiteView = setSiteView;
 

@@ -69,7 +69,7 @@ const TEXT_RUNS = [
 
 const TEXT_BIO_RUNS = [
   {
-    text: 'computer scientist and artist.',
+    text: 'Computer scientist and artist.',
     className: 'pretext-blurb',
     el: 'span',
     i18n: 'bio.line',
@@ -78,7 +78,7 @@ const TEXT_BIO_RUNS = [
 
 const TEXT_CONTACT_RUNS = [
   {
-    text: 'Contact: ',
+    text: 'Contact at ',
     className: 'pretext-label',
     el: 'span',
     i18n: 'contact.at',
@@ -89,23 +89,7 @@ const TEXT_CONTACT_RUNS = [
     el: 'a',
     href: 'mailto:andreiangmatos@gmail.com',
   },
-  { text: ' · ', className: 'pretext-plain', el: 'span' },
-  {
-    text: '@andreiangmatos',
-    className: 'pretext-tool-link',
-    el: 'a',
-    href: 'https://www.instagram.com/andreiangmatos/',
-    target: '_blank',
-    rel: 'noopener',
-  },
-];
-  {
-    text: 'andreiangmatos@gmail.com',
-    className: 'pretext-tool-link',
-    el: 'a',
-    href: 'mailto:andreiangmatos@gmail.com',
-  },
-  { text: ' · ', className: 'pretext-plain', el: 'span' },
+  { text: ' or ', className: 'pretext-plain', el: 'span', i18n: 'contact.or' },
   {
     text: '@andreiangmatos',
     className: 'pretext-tool-link',
@@ -116,7 +100,14 @@ const TEXT_CONTACT_RUNS = [
   },
 ];
 
-const TEXT_CV_BIRTH_RUNS = [{ text: 'b. 1999, Viseu · Lisboa', className: 'pretext-meta', el: 'span', i18n: 'cv.birth' }];
+const TEXT_CV_BIRTH_RUNS = [
+  {
+    text: 'born 1999 in Viseu, based in Lisboa',
+    className: 'pretext-meta',
+    el: 'span',
+    i18n: 'cv.birth',
+  },
+];
 
 let globalLH = 24;
 let bioLH = 24;
@@ -366,6 +357,7 @@ function getObstaclesForCvPanel() {
 function prepareAllPretextRuns(mod) {
   syncRunI18n(TEXT_RUNS);
   syncRunI18n(TEXT_BIO_RUNS);
+  syncRunI18n(TEXT_CONTACT_RUNS);
   syncRunI18n(TEXT_CV_BIRTH_RUNS);
   prepareRunsFor(mod, TEXT_RUNS);
   prepareRunsFor(mod, TEXT_BIO_RUNS);
@@ -1031,6 +1023,8 @@ async function boot() {
   window.addEventListener('pretext-dirty', scheduleLayout);
   window.addEventListener('site-view-change', () => {
     holdMouseSkew = true;
+    patchMainPretextNavAria();
+    scheduleInfoLayout();
   });
   window.addEventListener('site-lang-change', () => {
     fontsDirty = true;
