@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
+    <script src="i18n.js" defer></script>
     <script src="script.js" defer></script>
     <script type="module" src="pretext-flow.js"></script>
 </head>
@@ -21,69 +22,148 @@
         <main class="text-block">
             <div class="pretext-bundle">
                 <div class="pretext-fit-outer">
-                    <div id="pretext-lines" class="pretext-lines"></div>
+                    <div id="pretext-lines" class="pretext-lines">
+                        <button type="button" class="pretext-name" data-nav="home">Andreia Matos</button><span class="pretext-plain"> · </span><button type="button" class="pretext-nav-link" data-lang="pt">pt</button><span class="pretext-plain"> : </span><button type="button" class="pretext-nav-link" data-lang="en">en</button><span class="pretext-plain"> · </span><button type="button" class="pretext-nav-link is-current" data-nav="home" data-i18n="nav.home" aria-current="page">index</button><span class="pretext-plain"> · </span><button type="button" class="pretext-nav-link" data-nav="about" data-i18n="nav.about">about</button><span class="pretext-plain"> · </span><button type="button" class="pretext-nav-link" data-nav="works" data-i18n="nav.works">works</button>
+                    </div>
                 </div>
                 <div id="info-inline" class="cv-inline pretext-cv" aria-hidden="true">
-                    <div class="pretext-fit-outer contact-pretext-fit-outer">
-                        <div id="info-bio-lines" class="pretext-lines cv-pretext-sub"></div>
-                    </div>
                     <div class="pretext-fit-outer contact-pretext-fit-outer">
                         <div id="contact-pretext-lines" class="pretext-lines cv-pretext-sub"></div>
                     </div>
                     <div class="pretext-fit-outer cv-pretext-birth-wrap">
                         <div id="cv-pretext-birth" class="pretext-lines cv-pretext-sub"></div>
                     </div>
-                    <button type="button" class="collapsible" aria-expanded="true" onclick="toggleCollapsible(this)">Education</button>
-                    <div class="content is-open">
-                        <div class="pretext-fit-outer">
-                            <div id="cv-pretext-education" class="pretext-lines cv-pretext-sub"></div>
-                        </div>
+                    <div class="pretext-fit-outer contact-pretext-fit-outer">
+                        <div id="info-bio-lines" class="pretext-lines cv-pretext-sub"></div>
                     </div>
-                    <button type="button" class="collapsible" aria-expanded="true" onclick="toggleCollapsible(this)">Workshops</button>
-                    <div class="content is-open">
-                        <div class="pretext-fit-outer">
-                            <div id="cv-pretext-workshops" class="pretext-lines cv-pretext-sub"></div>
-                        </div>
-                    </div>
-                    <button type="button" class="collapsible" aria-expanded="true" onclick="toggleCollapsible(this)">Residencies</button>
-                    <div class="content is-open">
-                        <div class="pretext-fit-outer">
-                            <div id="cv-pretext-residencies" class="pretext-lines cv-pretext-sub"></div>
-                        </div>
-                    </div>
-                    <button type="button" class="collapsible" aria-expanded="true" onclick="toggleCollapsible(this)">Work experience</button>
-                    <div class="content is-open">
-                        <div class="pretext-fit-outer">
-                            <div id="cv-pretext-work" class="pretext-lines cv-pretext-sub"></div>
-                        </div>
+                    <div class="works-list info-cv-list">
+                        <section class="works-col">
+                            <h2 class="works-section info-flow" data-i18n="cv.education">education</h2>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="edu.pg.title"><em>Post-Graduation in Communication Sciences: Contemporary Culture and New Technologies</em></span>
+                                <span class="works-meta info-flow">Faculdade de Ciências Sociais e Humanas (FCSH), Universidade Nova de Lisboa (NOVA)</span>
+                                <span class="works-year info-flow">2024–2025</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="edu.msc.title"><em>MSc in Computer Science and Engineering: Artificial Intelligence · Interaction and Visualization</em></span>
+                                <span class="works-meta info-flow">Instituto Superior Técnico (IST), Universidade de Lisboa (UL)</span>
+                                <span class="works-year info-flow">2020–2022</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="edu.erasmus.title"><em>Erasmus Exchange Programme</em></span>
+                                <span class="works-meta info-flow" data-i18n="edu.erasmus.meta">ENSIMAG, Université Grenoble Alpes (UGA), Grenoble, France</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="edu.bsc.title"><em>BSc in Computer Science and Engineering</em></span>
+                                <span class="works-meta info-flow">Instituto Superior Técnico (IST), Universidade de Lisboa (UL)</span>
+                                <span class="works-year info-flow">2017–2020</span>
+                            </div>
+                        </section>
+                        <section class="works-col">
+                            <h2 class="works-section info-flow" data-i18n="cv.workshops">workshops</h2>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="ws.ill.title"><em>Advanced Illustration Seminar</em></span>
+                                <span class="works-meta info-flow">Ar.Co</span>
+                                <span class="works-year info-flow">2026</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="ws.dreams.title"><em>Alternative Dreams: Alternative photographic printing processes</em></span>
+                                <span class="works-meta info-flow">Imagerie — Casa de Imagens, Lisboa</span>
+                                <span class="works-year info-flow">2025</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="ws.bind.title"><em>Classical Bookbinding Workshop</em></span>
+                                <span class="works-meta info-flow">Artlier, Lisboa</span>
+                                <span class="works-year info-flow">2024</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="ws.cer.title"><em>Ceramics Club</em></span>
+                                <span class="works-meta info-flow">Corrente, Lisboa</span>
+                                <span class="works-year info-flow">2023</span>
+                            </div>
+                        </section>
+                        <section class="works-col">
+                            <h2 class="works-section info-flow" data-i18n="cv.residencies">residencies</h2>
+                            <div class="works-entry">
+                                <span class="works-title info-flow"><em>Provisional School for Nothing</em></span>
+                                <span class="works-meta info-flow">Associação Provisória, Sabóia</span>
+                                <span class="works-year info-flow">2025</span>
+                            </div>
+                        </section>
+                        <section class="works-col">
+                            <h2 class="works-section info-flow" data-i18n="cv.work">work experience</h2>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="job.ds.title"><em>Data Scientist / Machine Learning Engineer</em></span>
+                                <span class="works-meta info-flow">Nokia, Lisboa</span>
+                                <span class="works-year info-flow" data-i18n="job.ds.year">01.2023–present</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="job.ra.title"><em>Research Assistant</em></span>
+                                <span class="works-meta info-flow" data-i18n="job.ra.meta">Tallinn University (TLU), Estonia</span>
+                                <span class="works-year info-flow">12.2023–03.2024</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="job.ta.title"><em>Invited Teaching Assistant</em></span>
+                                <span class="works-meta info-flow">IST, Lisboa</span>
+                                <span class="works-year info-flow">03.2022–07.2022</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="job.intern.title"><em>Research Intern</em></span>
+                                <span class="works-meta info-flow">INESC-ID, Lisboa</span>
+                                <span class="works-year info-flow">09.2021–10.2022</span>
+                            </div>
+                        </section>
+                        <section class="works-col">
+                            <h2 class="works-section info-flow" data-i18n="cv.other">work experience: other</h2>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="other.prog.title"><em>Programming Team</em></span>
+                                <span class="works-meta info-flow">Olhares do Mediterrâneo</span>
+                                <span class="works-year info-flow">2024, 2025</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="other.prod.title"><em>Production Support: Volunteer</em></span>
+                                <span class="works-meta info-flow">Doclisboa</span>
+                                <span class="works-year info-flow">2022, 2023</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="other.prod.title"><em>Production Support: Volunteer</em></span>
+                                <span class="works-meta info-flow">Queer Lisboa</span>
+                                <span class="works-year info-flow">2022</span>
+                            </div>
+                            <div class="works-entry">
+                                <span class="works-title info-flow" data-i18n="other.kino.title"><em>Co-Founder</em></span>
+                                <span class="works-meta info-flow">Kino Kave Cineclub</span>
+                                <span class="works-year info-flow">2020–2022</span>
+                            </div>
+                        </section>
                     </div>
                 </div>
                 <div id="works-inline" class="cv-inline pretext-cv" aria-hidden="true">
                     <div class="works-list">
                         <section class="works-col">
-                            <h2 class="works-section">ceramics</h2>
+                            <h2 class="works-section" data-i18n="works.ceramics">ceramics</h2>
                             <a class="works-entry" href="https://andreianmatos.github.io/ceramics" target="_blank" rel="noopener noreferrer">
-                                <span class="works-title"><em>archive</em></span>
+                                <span class="works-title" data-i18n="works.archive"><em>archive</em></span>
                             </a>
                         </section>
                         <section class="works-col">
-                            <h2 class="works-section">images</h2>
+                            <h2 class="works-section" data-i18n="works.images">images</h2>
                             <a class="works-entry" href="https://andreianmatos.github.io/images" target="_blank" rel="noopener noreferrer">
-                                <span class="works-title"><em>archive</em></span>
+                                <span class="works-title" data-i18n="works.archive"><em>archive</em></span>
                             </a>
                         </section>
                         <section class="works-col">
-                            <h2 class="works-section">drawings</h2>
+                            <h2 class="works-section" data-i18n="works.drawings">drawings</h2>
                             <div class="works-entry">
                                 <span class="works-title"><em>Linhas</em></span>
-                                <span class="works-meta">Picture Book</span>
+                                <span class="works-meta" data-i18n="works.linhas.meta">Picture Book</span>
                             </div>
                             <a class="works-entry" href="https://andreianmatos.github.io/drawings" target="_blank" rel="noopener noreferrer">
-                                <span class="works-title"><em>archive</em></span>
+                                <span class="works-title" data-i18n="works.archive"><em>archive</em></span>
                             </a>
                         </section>
                         <section class="works-col">
-                            <h2 class="works-section">videos</h2>
+                            <h2 class="works-section" data-i18n="works.videos">videos</h2>
                             <a class="works-entry" href="https://drive.google.com/file/d/1RmKydEFAx-b-A423T0hPMhUD7aMmdyzd/view" target="_blank" rel="noopener noreferrer">
                                 <span class="works-title"><em>aparecendo desaparecendo borboleteando</em></span>
                                 <span class="works-year">2024</span>
@@ -97,18 +177,18 @@
                                 <span class="works-year">2023</span>
                             </a>
                             <a class="works-entry" href="https://www.youtube.com/@blasees" target="_blank" rel="noopener noreferrer">
-                                <span class="works-title"><em>archive</em></span>
+                                <span class="works-title" data-i18n="works.archive"><em>archive</em></span>
                             </a>
                         </section>
                         <section class="works-col">
-                            <h2 class="works-section">writings</h2>
+                            <h2 class="works-section" data-i18n="works.writings">writings</h2>
                             <a class="works-entry" href="https://drive.google.com/file/d/1x5NkW_KvGeS5hPfVycPog_uitsPkmW0J/view?usp=sharing" target="_blank" rel="noopener noreferrer">
                                 <span class="works-title"><em>Valor Sentimental: o Pato e o Poço</em></span>
                                 <span class="works-meta">Memórias Descritivas</span>
                                 <span class="works-year">2026</span>
                             </a>
                             <a class="works-entry" href="https://doi.org/10.51951/ti.v15i34.p130-145" target="_blank" rel="noopener noreferrer">
-                                <span class="works-title"><em>Do labirinto ao Anjo: corpo, identidade e tecnologia na obra de Mari Klonaris e Katerina Thomadaki</em></span>
+                                <span class="works-title"><em>Do Labirinto ao Anjo: Corpo, Identidade e Tecnologia na Obra de Maria Klonaris e Katerina Thomadaki</em></span>
                                 <span class="works-meta">Travessias Interativas, v. 15, n. 34, p. 130–145</span>
                                 <span class="works-year">2025</span>
                             </a>
@@ -119,14 +199,14 @@
                             </a>
                             <a class="works-entry" href="https://scholar.tecnico.ulisboa.pt/records/9FJgdVVv_8D6z9BdufxsBeEHu9O4hzs3Zuki" target="_blank" rel="noopener noreferrer">
                                 <span class="works-title"><em>On the Feeling of Acoustic and Visual Tension in Generative Art</em></span>
-                                <span class="works-meta">Master's thesis, Instituto Superior Técnico</span>
+                                <span class="works-meta" data-i18n="works.thesis.meta">Master's thesis, Instituto Superior Técnico</span>
                                 <span class="works-year">2022</span>
                             </a>
                         </section>
                         <section class="works-col">
-                            <h2 class="works-section">websites</h2>
-                            <a class="works-entry" href="./" onclick="event.preventDefault(); setSiteView('index');">
-                                <span class="works-title"><em>this one :)</em></span>
+                            <h2 class="works-section" data-i18n="works.websites">websites</h2>
+                            <a class="works-entry" href="./" onclick="event.preventDefault(); setSiteView('home');">
+                                <span class="works-title" data-i18n="works.thisone"><em>this one :)</em></span>
                             </a>
                             <a class="works-entry" href="https://ritaruivo.com" target="_blank" rel="noopener noreferrer">
                                 <span class="works-title"><em>ritaruivo.com</em></span>

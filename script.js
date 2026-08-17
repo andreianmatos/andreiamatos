@@ -1,18 +1,17 @@
 const CONFIG = {
-    /** Off for now — set true to bring back drifting cut-outs on index. */
-    floatsEnabled: false,
-    pieces: { minScale: 0.055, maxScale: 0.1 },
-    /** Largura ≈ min(vw,vh) * escala — no telemóvel o ecrã estreito pede escalas maiores. */
-    piecesMobile: { minScale: 0.16, maxScale: 0.26 },
-    workFloats: { minScale: 0.055, maxScale: 0.09 },
-    workFloatsMobile: { minScale: 0.14, maxScale: 0.22 },
-    paths: { items: 'main/items/' },
+    floatsEnabled: true,
+    /** Width as a fraction of the shorter screen edge (`vmin`). Same on every device. */
+    pieces: { minScale: 0.15, maxScale: 0.26 },
+    workFloats: { minScale: 0.14, maxScale: 0.22 },
+    paths: { items: 'main/' },
     /** Movimento flutuante: vx/vy por frame (~60fps). Lento — menu, não dança. */
     drift: {
         vMax: 0.28,
         damping: 0.9997,
         minSpeed: 0.02,
         nudge: 0.04,
+        /** Only a few pieces drift, and slowly. */
+        moveChance: 0.28,
     },
     /** Zona livre à volta do título / nav (px). */
     titleKeepoutPad: 28,
@@ -26,16 +25,41 @@ const WORK_FLOATS = [
     { path: 'work/writings.png', href: 'writings.html', label: 'writings' },
 ];
 
-/** Recortes na raiz de `main/items/` (a pasta `no/` não entra nos floats). Acrescenta aqui ficheiros novos. */
-const ITEM_PIECE_FILES = [
-    '1.png',
-    '2.png',
-    '3.png',
-    '4.png',
-    '5.png',
-    '7.png',
-    '8.png',
-    '9.png',
+const FLOATS_MANIFEST = 'main/floats.json';
+const SIZE_PRESETS = {
+    'very-small': 0.08,
+    small: 0.12,
+    medium: 0.18,
+    big: 0.28,
+    'very-big': 0.36,
+    huge: 0.55,
+    enormous: 0.82,
+    giant: 2.05,
+};
+const FLOATS_FALLBACK_ITEMS = [
+    { file: 'flower_photo.png', size: 'very-big' },
+    { file: 'painted_flower.png', size: 'big' },
+    { file: 'photo_book.png', size: 'very-big' },
+    { file: 'angel_fuller.jpeg', size: 'big' },
+    { file: 'anjo.png', size: 'medium' },
+    { file: 'flor.png', size: 'big' },
+    { file: 'laco.png', size: 'big' },
+    { file: 'heart.png', size: 'medium' },
+    { file: 'heartlil.png', size: 'small' },
+    { file: '10.png', size: 'big' },
+    { file: 'drawn_butterfly.png', size: 'medium' },
+    { file: 'drawn_heart.png', size: 'medium' },
+    { file: 'dr9.png', size: 'medium' },
+    { file: '6.png', size: 'medium' },
+    { file: 'ceramic_infinitepuzzle.png', size: 'big' },
+    { file: 'ceramic_butterfly.png', size: 'small' },
+    { file: '1.png', size: 'small' },
+    { file: '7.png', size: 'small' },
+    { file: 'ph__2.png', size: 'big' },
+    { file: 'ceramic_jar.png', size: 'small' },
+    { file: 'ceramic_jar2.png', size: 'small' },
+    { file: 'hands.png', size: 'medium' },
+    { file: 'drawings.png', size: 'big' },
 ];
 
 function pageDirectoryPath() {
@@ -45,27 +69,301 @@ function pageDirectoryPath() {
     return `${p}/`;
 }
 
+function encodeAssetPath(relativePath) {
+    return relativePath.replace(/^\//, '').split('/').map(encodeURIComponent).join('/');
+}
+
 function resolveAssetUrl(relativePath) {
-    const clean = relativePath.replace(/^\//, '');
+    const clean = encodeAssetPath(relativePath);
     if (window.location.protocol === 'file:') return clean;
     return `${window.location.origin}${pageDirectoryPath()}${clean}`;
 }
 
 /** Go Live vs site em produção: tentar pasta da página e depois raiz do domínio (CNAME / index na raiz). */
 function candidateAssetUrls(relativePath) {
-    const clean = relativePath.replace(/^\//, '');
+    const clean = encodeAssetPath(relativePath);
     if (window.location.protocol === 'file:') return [clean];
     const primary = resolveAssetUrl(relativePath);
     const atRoot = `${window.location.origin}/${clean}`;
     return primary === atRoot ? [primary] : [primary, atRoot];
 }
 
+function normalizeSizeKey(size) {
+    return String(size || '')
+        .trim()
+        .toLowerCase()
+        .replace(/_/g, '-')
+        .replace(/\s+/g, '-');
+}
+
+function scaleFromSizeWord(size, presets, fallback) {
+    if (typeof size === 'number' && Number.isFinite(size) && size > 0) return size;
+    const table = presets && typeof presets === 'object' ? presets : SIZE_PRESETS;
+    const key = normalizeSizeKey(size);
+    if (key && Number.isFinite(table[key])) return table[key];
+    const asNum = Number(key);
+    if (Number.isFinite(asNum) && asNum > 0) return asNum;
+    return fallback;
+}
+
+async function loadJsonAsset(relativePath) {
+    for (const url of candidateAssetUrls(relativePath)) {
+        try {
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+        } catch (_) {
+            /* file:// or missing */
+        }
+    }
+    return null;
+}
+
+let floatCountRange = { min: 5, max: 9, mobileMin: 3, mobileMax: 5 };
+let floatGiantRange = { min: 1, max: 3, mobileMin: 1, mobileMax: 2 };
+
+function parseCountRange(raw, fallback = { min: 5, max: 9, mobileMin: 3, mobileMax: 5 }) {
+    if (raw == null) return { ...fallback };
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+        const n = Math.max(0, Math.round(raw));
+        return { min: n, max: n, mobileMin: n, mobileMax: n };
+    }
+    if (typeof raw !== 'object') return { ...fallback };
+    const min = Math.max(0, Math.round(Number(raw.min ?? fallback.min)));
+    const max = Math.max(min, Math.round(Number(raw.max ?? fallback.max)));
+    const mob = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : null;
+    const mobileMin = Math.max(0, Math.round(Number(mob?.min ?? raw.mobileMin ?? fallback.mobileMin)));
+    const mobileMax = Math.max(mobileMin, Math.round(Number(mob?.max ?? raw.mobileMax ?? fallback.mobileMax)));
+    return { min, max, mobileMin, mobileMax };
+}
+
+function pickAppearCount(total) {
+    const r = floatCountRange;
+    const useMobile = isMobile();
+    let min = useMobile ? r.mobileMin : r.min;
+    let max = useMobile ? r.mobileMax : r.max;
+    min = Math.max(1, Math.min(min, total));
+    max = Math.max(min, Math.min(max, total));
+    return min + ((Math.random() * (max - min + 1)) | 0);
+}
+
+function pickGiantCount(available) {
+    if (available <= 0) return 0;
+    const r = floatGiantRange;
+    const useMobile = isMobile();
+    let min = useMobile ? r.mobileMin : r.min;
+    let max = useMobile ? r.mobileMax : r.max;
+    min = Math.max(0, Math.min(min, available));
+    max = Math.max(min, Math.min(max, available));
+    return min + ((Math.random() * (max - min + 1)) | 0);
+}
+
+async function loadFloatPieceDefs() {
+    const data = await loadJsonAsset(FLOATS_MANIFEST);
+    floatCountRange = parseCountRange(data?.count ?? data?.appear);
+    floatGiantRange = parseCountRange(data?.giants, {
+        min: 1,
+        max: 3,
+        mobileMin: 1,
+        mobileMax: 2,
+    });
+    const presets = { ...SIZE_PRESETS, ...(data?.sizes || {}) };
+    const defaultSize = data?.defaultSize || 'medium';
+    const defaultScale = scaleFromSizeWord(defaultSize, presets, SIZE_PRESETS.medium);
+    const items = Array.isArray(data?.items) && data.items.length
+        ? data.items
+        : FLOATS_FALLBACK_ITEMS;
+    return items
+        .map((item) => {
+            const file = typeof item === 'string' ? item : item?.file;
+            if (!file || /\.json$/i.test(file)) return null;
+            const size = typeof item === 'string' ? defaultSize : item.size ?? defaultSize;
+            const maxWord =
+                typeof item === 'string'
+                    ? size
+                    : item.max ?? item.augment ?? item.upTo ?? size;
+            const scale = scaleFromSizeWord(size, presets, defaultScale);
+            const maxScale = Math.max(
+                scale,
+                scaleFromSizeWord(maxWord, presets, scale)
+            );
+            return {
+                file,
+                scale,
+                maxScale,
+                move: typeof item === 'object' ? item.move : undefined,
+                speed: typeof item === 'object' ? item.speed : undefined,
+            };
+        })
+        .filter(Boolean);
+}
+
 function viewportWidth() {
-    return window.visualViewport?.width ?? window.innerWidth;
+    return document.documentElement.clientWidth || window.innerWidth;
 }
 
 function viewportHeight() {
-    return window.visualViewport?.height ?? window.innerHeight;
+    return document.documentElement.clientHeight || window.innerHeight;
+}
+
+/** Layout size — ignores the mobile URL bar (visualViewport / innerHeight jitter). */
+function screenVmin() {
+    return Math.min(viewportWidth(), viewportHeight());
+}
+
+function piecePixelWidth(scale) {
+    return screenVmin() * scale;
+}
+
+function shuffleInPlace(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        const t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+    }
+    return arr;
+}
+
+function lerpScale(a, b, t) {
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+    return lo + (hi - lo) * t;
+}
+
+function canWash(def) {
+    return (def?.maxScale || 0) >= SIZE_PRESETS.enormous - 0.001;
+}
+
+function planFloatLayout(loaded) {
+    const giantPool = shuffleInPlace(loaded.filter((e) => canWash(e.def)));
+    const giantN = pickGiantCount(giantPool.length);
+    const giants = giantPool.slice(0, giantN);
+    const giantSet = new Set(giants);
+    const rest = shuffleInPlace(loaded.filter((e) => !giantSet.has(e)));
+    const n = pickAppearCount(loaded.length);
+    const restN = Math.max(0, Math.min(rest.length, n - giants.length));
+    const mobile = isMobile();
+    const picked = giants
+        .map((entry) => ({ entry, role: 'wash' }))
+        .concat(rest.slice(0, restN).map((entry) => ({ entry, role: null })));
+
+    return picked.map((slot, i) => {
+        const entry = slot.entry;
+        const base = entry.def.scale || 0.18;
+        const max = entry.def.maxScale || base;
+        if (slot.role === 'wash' || (i === 0 && canWash(entry.def))) {
+            const hi = Math.min(max, 2.15);
+            const lo = Math.min(hi, Math.max(base, SIZE_PRESETS.enormous));
+            return {
+                entry,
+                role: 'wash',
+                washIndex: i,
+                scale: lerpScale(lo, hi, 0.35 + Math.random() * 0.65),
+                move: false,
+            };
+        }
+        const restI = i - giants.length;
+        if (restI <= (mobile ? 0 : 1)) {
+            return {
+                entry,
+                role: 'anchor',
+                scale: lerpScale(base, Math.min(max, 0.42), 0.4 + Math.random() * 0.6),
+                move: false,
+            };
+        }
+        if (restI <= (mobile ? 2 : 4)) {
+            return {
+                entry,
+                role: 'floater',
+                scale: lerpScale(base, Math.min(max, 0.32), Math.random()),
+                move: Math.random() < 0.55,
+                speed: 0.35 + Math.random() * 0.55,
+            };
+        }
+        return {
+            entry,
+            role: 'accent',
+            scale: lerpScale(Math.min(base, max), Math.min(max, 0.18), Math.random() * 0.5),
+            move: Math.random() < 0.3,
+            speed: 0.55 + Math.random() * 0.7,
+        };
+    });
+}
+
+function slotPositions(count) {
+    const vw = contentScrollWidth();
+    const vh = viewportHeight();
+    const cols = 3;
+    const rows = 2;
+    const slots = [];
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (r === 0 && c === 0) continue;
+            slots.push({
+                x: ((c + 0.1 + Math.random() * 0.45) * vw) / cols,
+                y: ((r + 0.12 + Math.random() * 0.4) * vh) / rows,
+            });
+        }
+    }
+    shuffleInPlace(slots);
+    const out = [];
+    for (let i = 0; i < count; i++) out.push(slots[i % slots.length]);
+    return out;
+}
+
+function placeWashItem(item, washIndex = 0) {
+    const vw = contentScrollWidth();
+    const vh = viewportHeight();
+    const nx = (vw - item.w) / 2;
+    const ny = (vh - item.h) / 2;
+    const spreads = [
+        { x: 0, y: 0 },
+        { x: -0.28, y: 0.16 },
+        { x: 0.3, y: -0.14 },
+        { x: -0.1, y: -0.26 },
+        { x: 0.16, y: 0.22 },
+    ];
+    const off = spreads[washIndex % spreads.length];
+    const jitterX = (Math.random() - 0.5) * vw * 0.08;
+    const jitterY = (Math.random() - 0.5) * vh * 0.08;
+    item.x = nx + off.x * vw + jitterX;
+    item.y = ny + off.y * vh + jitterY;
+    clampPiecePos(item);
+}
+
+function pickMotion(scale, opts = {}) {
+    if (prefersReducedMotion()) {
+        return { moves: false, speedMul: 0, vx: 0, vy: 0 };
+    }
+    const tooBig = scale >= 1.35;
+    const moves =
+        opts.move === true
+            ? true
+            : opts.move === false || tooBig
+              ? false
+              : Math.random() < CONFIG.drift.moveChance;
+    if (!moves) return { moves: false, speedMul: 0, vx: 0, vy: 0 };
+    const sizeSlow = Math.max(0.22, 1.08 - scale * 0.55);
+    const speedMul =
+        typeof opts.speed === 'number' && opts.speed > 0
+            ? opts.speed
+            : sizeSlow * (0.28 + Math.random() * 2.5);
+    const v = CONFIG.drift.vMax * speedMul;
+    return {
+        moves: true,
+        speedMul,
+        vx: (Math.random() - 0.5) * 2 * v,
+        vy: (Math.random() - 0.5) * 2 * v,
+    };
+}
+
+function clampPiecePos(item) {
+    const maxX = contentScrollWidth() - item.w;
+    const maxY = contentScrollHeight() - item.h;
+    if (maxX < 0) item.x = Math.max(maxX, Math.min(0, item.x));
+    else item.x = Math.max(0, Math.min(maxX, item.x));
+    if (maxY < 0) item.y = Math.max(maxY, Math.min(0, item.y));
+    else item.y = Math.max(0, Math.min(maxY, item.y));
 }
 
 function contentScrollWidth() {
@@ -326,11 +624,19 @@ function setPanelOpen(panelId, bodyClass, open) {
 }
 
 function setSiteView(view) {
-    setPanelOpen('info-inline', 'info-open', view === 'info');
+    if (view === 'index') view = 'home';
+    if (view === 'info') view = 'about';
+    setPanelOpen('info-inline', 'info-open', view === 'about');
     setPanelOpen('works-inline', 'works-open', view === 'works');
+    if (view === 'home') {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }
     if (location.hash) {
         history.replaceState(null, '', `${location.pathname}${location.search}`);
     }
+    window.dispatchEvent(new Event('site-view-change'));
     requestAnimationFrame(() => notifyPretextDirty());
 }
 window.setSiteView = setSiteView;
@@ -379,6 +685,7 @@ function attachPointerHandlers(container, item) {
 
     container.onpointerdown = (e) => {
         if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
         const layer = document.getElementById('drawings-layer');
         if (!layer) return;
         const { x: lx, y: ly } = getLayerLocalPoint(e, layer);
@@ -392,6 +699,8 @@ function attachPointerHandlers(container, item) {
         item.dragOffsetX = lx - item.x;
         item.dragOffsetY = ly - item.y;
     };
+    container.addEventListener('dragstart', (e) => e.preventDefault());
+    container.addEventListener('selectstart', (e) => e.preventDefault());
     container.onpointermove = onMove;
     container.onpointerup = () => {
         item.isDragging = false;
@@ -412,66 +721,55 @@ function attachPointerHandlers(container, item) {
 }
 
 function createPieceElement(imgObj, parent, opts = {}) {
-    const { extraClass = '', linkHref = null, label = '' } = opts;
-    const m = isMobile();
+    const { extraClass = '', linkHref = null, label = '', scale: scaleOpt, role = '', washIndex = 0 } = opts;
     const isWork = /\bwork-float\b/.test(extraClass);
-    let mn;
-    let mx;
-    if (isWork) {
-        mn = m ? CONFIG.workFloatsMobile.minScale : CONFIG.workFloats.minScale;
-        mx = m ? CONFIG.workFloatsMobile.maxScale : CONFIG.workFloats.maxScale;
-    } else {
-        mn = m ? CONFIG.piecesMobile.minScale : CONFIG.pieces.minScale;
-        mx = m ? CONFIG.piecesMobile.maxScale : CONFIG.pieces.maxScale;
-    }
+    const range = isWork ? CONFIG.workFloats : CONFIG.pieces;
+    const mn = opts.minScale ?? range.minScale;
+    const mx = opts.maxScale ?? range.maxScale;
 
     const container = document.createElement('div');
-    container.className = `drawing-item${extraClass ? ` ${extraClass}` : ''}`;
+    container.className = `drawing-item${extraClass ? ` ${extraClass}` : ''}${role ? ` is-${role}` : ''}`;
     const imgEl = document.createElement('img');
     imgEl.src = imgObj.src;
     imgEl.alt = label;
     imgEl.draggable = false;
+    imgEl.setAttribute('draggable', 'false');
     container.appendChild(imgEl);
 
-    const scale = mn + Math.random() * (mx - mn);
-    const vw = viewportWidth();
-    const refW = m ? Math.min(vw, viewportHeight()) : vw;
-    let w = refW * scale;
-    if (m && isWork) w = Math.max(48, w);
+    const scale =
+        typeof opts.fixedScale === 'number'
+            ? opts.fixedScale
+            : scaleOpt ?? mn + Math.random() * (mx - mn);
+    const w = piecePixelWidth(scale);
     const ratio =
         imgObj.naturalWidth > 0 ? imgObj.naturalHeight / imgObj.naturalWidth : 1;
     const h = w * ratio;
+    container.style.setProperty('--piece-scale', String(scale));
     container.style.width = `${w}px`;
+    if (role === 'wash') {
+        container.style.setProperty('--wash-z', String(washIndex));
+        container.style.zIndex = String(washIndex);
+    } else {
+        container.style.zIndex = String(Math.round((1.35 - Math.min(scale, 1.3)) * 14));
+    }
 
-    const docW = contentScrollWidth();
-    const docH = contentScrollHeight();
-    const maxX = Math.max(10, docW - w - 10);
-    const maxY = Math.max(10, docH - h - 10);
-    const keepout = titleKeepoutRect();
-    let x = Math.random() * maxX + 10;
-    let y = Math.random() * maxY + 10;
-    for (let i = 0; i < 40 && overlapsKeepout(x, y, w, h, keepout); i++) {
-        x = Math.random() * maxX + 10;
-        y = Math.random() * maxY + 10;
-    }
-    if (overlapsKeepout(x, y, w, h, keepout)) {
-        x = Math.min(maxX, Math.max(10, keepout.right + 8));
-        y = Math.min(maxY, Math.max(10, keepout.bottom + 8));
-    }
+    const motion = pickMotion(scale, opts);
     const item = {
         el: container,
-        x,
-        y,
-        vx: (Math.random() - 0.5) * 2 * CONFIG.drift.vMax,
-        vy: (Math.random() - 0.5) * 2 * CONFIG.drift.vMax,
+        x: 0,
+        y: 0,
+        vx: motion.vx,
+        vy: motion.vy,
+        moves: motion.moves,
+        speedMul: motion.speedMul,
         isDragging: false,
         isHovered: false,
-        /** Drift só depois de visível — evita saltos quando o fade-in atrasa. */
         physicsReady: false,
         scale,
         ratio,
         w,
         h,
+        role,
         linkHref,
         dragMoved: 0,
         dragStartX: 0,
@@ -479,6 +777,31 @@ function createPieceElement(imgObj, parent, opts = {}) {
         dragDownAt: 0,
         pointerType: 'mouse',
     };
+
+    if (role === 'wash') {
+        placeWashItem(item, washIndex);
+    } else if (typeof opts.x === 'number' && typeof opts.y === 'number') {
+        item.x = opts.x - w * 0.35;
+        item.y = opts.y - h * 0.35;
+        const keepout = titleKeepoutRect();
+        if (scale < 0.45) pushOutOfTitleKeepout(item, keepout);
+        clampPiecePos(item);
+    } else {
+        const docW = contentScrollWidth();
+        const docH = contentScrollHeight();
+        const maxX = Math.max(10, docW - w - 10);
+        const maxY = Math.max(10, docH - h - 10);
+        const keepout = titleKeepoutRect();
+        item.x = Math.random() * maxX + 10;
+        item.y = Math.random() * maxY + 10;
+        for (let i = 0; i < 40 && overlapsKeepout(item.x, item.y, w, h, keepout); i++) {
+            item.x = Math.random() * maxX + 10;
+            item.y = Math.random() * maxY + 10;
+        }
+        clampPiecePos(item);
+        if (scale < 0.45) pushOutOfTitleKeepout(item, keepout);
+        clampPiecePos(item);
+    }
 
     container.style.transform = `translate3d(${item.x}px, ${item.y}px, 0)`;
     if (label) container.title = label;
@@ -498,16 +821,34 @@ async function initFloating() {
     const layer = document.getElementById('drawings-layer');
     if (!layer) return;
 
+    const pieceDefs = await loadFloatPieceDefs();
+    if (!pieceDefs.length) return;
+
     const results = await Promise.all(
-        ITEM_PIECE_FILES.map((f) => loadAssetImage(`${CONFIG.paths.items}${f}`))
+        pieceDefs.map(async (def) => {
+            const img = await loadAssetImage(`${CONFIG.paths.items}${def.file}`);
+            return img ? { img, def } : null;
+        })
     );
     const loaded = results.filter(Boolean);
-    loaded.sort(() => Math.random() - 0.5);
-
+    const plans = planFloatLayout(loaded);
+    const washCount = plans.filter((p) => p.role === 'wash').length;
+    const slots = slotPositions(Math.max(0, plans.length - washCount));
     const staggerMs = isMobile() ? 0 : 48;
-    const pieces = isMobile() ? loaded.slice(0, 4) : loaded;
-    pieces.forEach((img, index) => {
-        createPieceElement(img, layer, {});
+    let slotI = 0;
+    plans.forEach((plan, index) => {
+        const file = plan.entry.def.file;
+        const slot = plan.role === 'wash' ? null : slots[slotI++];
+        createPieceElement(plan.entry.img, layer, {
+            label: file.replace(/\.[^.]+$/i, '').replace(/_/g, ' '),
+            fixedScale: plan.scale,
+            move: plan.move,
+            speed: plan.speed,
+            role: plan.role,
+            washIndex: plan.washIndex,
+            x: slot?.x,
+            y: slot?.y,
+        });
         const el = floatingItems[floatingItems.length - 1]?.el;
         if (!el) return;
         const reveal = () => {
@@ -566,7 +907,6 @@ function updatePhysics() {
     }
 
     const bufferZone = 40;
-    const keepout = titleKeepoutRect();
 
     floatingItems.forEach((item) => {
         if (!item.physicsReady) {
@@ -575,7 +915,7 @@ function updatePhysics() {
             }
             return;
         }
-        if (!item.isDragging && !item.isHovered) {
+        if (item.moves && !item.isDragging && !item.isHovered) {
             item.x += item.vx;
             item.y += item.vy;
 
@@ -584,43 +924,42 @@ function updatePhysics() {
             const maxX = contentScrollWidth() - itemW;
             const maxY = contentScrollHeight() - itemH;
 
-            if (item.x < bufferZone) {
-                const factor = item.x / bufferZone;
-                item.vx = Math.abs(item.vx) * (0.3 + factor * 0.7);
-                item.x = Math.max(0, item.x);
+            if (maxX > 0) {
+                if (item.x < bufferZone) {
+                    const factor = item.x / bufferZone;
+                    item.vx = Math.abs(item.vx) * (0.3 + factor * 0.7);
+                    item.x = Math.max(0, item.x);
+                }
+                if (item.x > maxX - bufferZone) {
+                    const factor = (maxX - item.x) / bufferZone;
+                    item.vx = -Math.abs(item.vx) * (0.3 + factor * 0.7);
+                    item.x = Math.min(maxX, item.x);
+                }
             }
-            if (item.x > maxX - bufferZone) {
-                const factor = (maxX - item.x) / bufferZone;
-                item.vx = -Math.abs(item.vx) * (0.3 + factor * 0.7);
-                item.x = Math.min(maxX, item.x);
-            }
-            if (item.y < bufferZone) {
-                const factor = item.y / bufferZone;
-                item.vy = Math.abs(item.vy) * (0.3 + factor * 0.7);
-                item.y = Math.max(0, item.y);
-            }
-            if (item.y > maxY - bufferZone) {
-                const factor = (maxY - item.y) / bufferZone;
-                item.vy = -Math.abs(item.vy) * (0.3 + factor * 0.7);
-                item.y = Math.min(maxY, item.y);
+            if (maxY > 0) {
+                if (item.y < bufferZone) {
+                    const factor = item.y / bufferZone;
+                    item.vy = Math.abs(item.vy) * (0.3 + factor * 0.7);
+                    item.y = Math.max(0, item.y);
+                }
+                if (item.y > maxY - bufferZone) {
+                    const factor = (maxY - item.y) / bufferZone;
+                    item.vy = -Math.abs(item.vy) * (0.3 + factor * 0.7);
+                    item.y = Math.min(maxY, item.y);
+                }
             }
 
-            item.x = Math.max(0, Math.min(maxX, item.x));
-            item.y = Math.max(0, Math.min(maxY, item.y));
-
-            pushOutOfTitleKeepout(item, keepout);
-            item.x = Math.max(0, Math.min(maxX, item.x));
-            item.y = Math.max(0, Math.min(maxY, item.y));
+            clampPiecePos(item);
 
             const damp = CONFIG.drift.damping;
             item.vx *= damp;
             item.vy *= damp;
 
-            const minV = CONFIG.drift.minSpeed;
+            const minV = CONFIG.drift.minSpeed * (item.speedMul || 1);
             if (Math.abs(item.vx) < minV && Math.abs(item.vy) < minV) {
-                const n = CONFIG.drift.nudge;
+                const n = CONFIG.drift.nudge * (item.speedMul || 1);
                 item.vx += (Math.random() - 0.5) * 2 * n;
-                item.vy += (Math.random() - 0.5) * 2 * n;
+                item.vy += (Math.random() * 2 - 1) * n;
             }
         }
 
@@ -633,27 +972,16 @@ function updatePhysics() {
 }
 
 function rescaleFloatingItems() {
-    const m = isMobile();
-    const vw = viewportWidth();
-    const refW = m ? Math.min(vw, viewportHeight()) : vw;
     const keepout = titleKeepoutRect();
-    const docW = contentScrollWidth();
-    const docH = contentScrollHeight();
     floatingItems.forEach((item) => {
-        const isWork = item.el?.classList.contains('work-float');
-        let w = refW * (item.scale || 0.1);
-        if (m && isWork) w = Math.max(48, w);
+        const w = piecePixelWidth(item.scale || 0.18);
         const h = w * (item.ratio || 1);
         item.w = w;
         item.h = h;
-        if (item.el) item.el.style.width = `${w}px`;
-        const maxX = Math.max(0, docW - w);
-        const maxY = Math.max(0, docH - h);
-        item.x = Math.max(0, Math.min(maxX, item.x));
-        item.y = Math.max(0, Math.min(maxY, item.y));
-        pushOutOfTitleKeepout(item, keepout);
-        item.x = Math.max(0, Math.min(maxX, item.x));
-        item.y = Math.max(0, Math.min(maxY, item.y));
+        if (item.el?.style) item.el.style.width = `${w}px`;
+        clampPiecePos(item);
+        if (item.scale < 0.45) pushOutOfTitleKeepout(item, keepout);
+        clampPiecePos(item);
         if (item.el?.style) {
             item.el.style.transform = `translate3d(${item.x}px, ${item.y}px, 0)`;
         }
@@ -679,7 +1007,7 @@ function initCvInline() {
 
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
-        setSiteView('index');
+        setSiteView('home');
     });
 
     panel.addEventListener('transitionend', (e) => {
@@ -700,7 +1028,22 @@ function initCvInline() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initCvInline();
-    setSiteView('index');
+    setSiteView('home');
+    document.addEventListener('click', (e) => {
+        const langBtn = e.target.closest?.('[data-lang]');
+        if (langBtn && typeof window.setSiteLang === 'function') {
+            e.preventDefault();
+            window.setSiteLang(langBtn.dataset.lang);
+            return;
+        }
+        const btn = e.target.closest?.('[data-nav]');
+        if (!btn) return;
+        const nav = btn.dataset.nav;
+        if (nav) {
+            e.preventDefault();
+            setSiteView(nav);
+        }
+    });
     if (!CONFIG.floatsEnabled || !document.getElementById('drawings-layer')) return;
     if (prefersReducedMotion()) {
         CONFIG.drift.vMax = 0;
@@ -708,19 +1051,20 @@ document.addEventListener('DOMContentLoaded', () => {
         CONFIG.drift.nudge = 0;
     }
     let viewportTimer = 0;
+    let lastLayoutWidth = viewportWidth();
     const onViewportChange = () => {
         window.clearTimeout(viewportTimer);
         viewportTimer = window.setTimeout(() => {
+            const w = viewportWidth();
+            if (w < 60 || Math.abs(w - lastLayoutWidth) < 8) return;
+            lastLayoutWidth = w;
             rescaleFloatingItems();
-            notifyPretextDirty();
-        }, 160);
+        }, 280);
     };
     window.addEventListener('resize', onViewportChange, { passive: true });
     window.addEventListener('orientationchange', onViewportChange, { passive: true });
-    window.visualViewport?.addEventListener('resize', onViewportChange, { passive: true });
     updatePhysics();
     void (async () => {
         await initFloating();
-        await initWorkFloats();
     })();
 });

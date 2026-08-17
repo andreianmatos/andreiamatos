@@ -10,27 +10,52 @@ function isWorksOpen() {
   return document.body?.classList.contains('works-open');
 }
 
+function isFlowOpen() {
+  return isInfoOpen() || isWorksOpen();
+}
+
 function currentNav() {
   if (isWorksOpen()) return 'works';
-  if (isInfoOpen()) return 'info';
-  return 'index';
+  if (isInfoOpen()) return 'about';
+  return 'home';
 }
 
 const TEXT_RUNS = [
-  { text: 'Andreia Matos', className: 'pretext-name', el: 'span' },
+  {
+    text: 'Andreia Matos',
+    className: 'pretext-name',
+    el: 'button',
+    nav: 'home',
+  },
+  { text: ' · ', className: 'pretext-plain', el: 'span' },
+  {
+    text: 'pt',
+    className: 'pretext-nav-link',
+    el: 'button',
+    lang: 'pt',
+  },
+  { text: ' : ', className: 'pretext-plain', el: 'span' },
+  {
+    text: 'en',
+    className: 'pretext-nav-link',
+    el: 'button',
+    lang: 'en',
+  },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
     text: 'index',
     className: 'pretext-nav-link',
     el: 'button',
-    nav: 'index',
+    nav: 'home',
+    i18n: 'nav.home',
   },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
-    text: 'info',
+    text: 'about',
     className: 'pretext-nav-link',
     el: 'button',
-    nav: 'info',
+    nav: 'about',
+    i18n: 'nav.about',
   },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
@@ -38,6 +63,7 @@ const TEXT_RUNS = [
     className: 'pretext-nav-link',
     el: 'button',
     nav: 'works',
+    i18n: 'nav.works',
   },
 ];
 
@@ -46,10 +72,33 @@ const TEXT_BIO_RUNS = [
     text: 'computer scientist and artist.',
     className: 'pretext-blurb',
     el: 'span',
+    i18n: 'bio.line',
   },
 ];
 
 const TEXT_CONTACT_RUNS = [
+  {
+    text: 'Contact: ',
+    className: 'pretext-label',
+    el: 'span',
+    i18n: 'contact.at',
+  },
+  {
+    text: 'andreiangmatos@gmail.com',
+    className: 'pretext-tool-link',
+    el: 'a',
+    href: 'mailto:andreiangmatos@gmail.com',
+  },
+  { text: ' · ', className: 'pretext-plain', el: 'span' },
+  {
+    text: '@andreiangmatos',
+    className: 'pretext-tool-link',
+    el: 'a',
+    href: 'https://www.instagram.com/andreiangmatos/',
+    target: '_blank',
+    rel: 'noopener',
+  },
+];
   {
     text: 'andreiangmatos@gmail.com',
     className: 'pretext-tool-link',
@@ -67,141 +116,12 @@ const TEXT_CONTACT_RUNS = [
   },
 ];
 
-const TEXT_CV_BIRTH_RUNS = [{ text: 'b. 1999, Viseu · Lisboa', className: 'pretext-meta', el: 'span' }];
-
-const TEXT_CV_EDUCATION_RUNS = [
-  { text: '(2024-2025) ', className: 'pretext-cv-body', el: 'span' },
-  {
-    text: 'Post-Graduation in Communication Sciences: Contemporary Culture and New Technologies',
-    className: 'pretext-cv-strong',
-    el: 'span',
-  },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  {
-    text: 'Faculdade de Ciências Sociais e Humanas (FCSH), Universidade Nova de Lisboa (NOVA)',
-    className: 'pretext-cv-body',
-    el: 'span',
-  },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2020-2022) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'MSc in Computer Science and Engineering', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  {
-    text: 'Instituto Superior Técnico (IST), Universidade de Lisboa (UL)',
-    className: 'pretext-cv-body',
-    el: 'span',
-  },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  {
-    text: 'Specializations: Artificial Intelligence · Computer Graphics',
-    className: 'pretext-cv-body',
-    el: 'span',
-  },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '+ ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Erasmus Exchange Programme', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  {
-    text: 'ENSIMAG, Université Grenoble Alpes (UGA), Grenoble, France',
-    className: 'pretext-cv-body',
-    el: 'span',
-  },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2017-2020) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'BSc in Computer Science and Engineering', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  {
-    text: 'Instituto Superior Técnico (IST), Universidade de Lisboa (UL)',
-    className: 'pretext-cv-body',
-    el: 'span',
-  },
-];
-
-const TEXT_CV_WORKSHOPS_RUNS = [
-  { text: '(2026) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Advanced Illustration Seminar', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  { text: 'Ar.Co', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2025) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Alternative Dreams', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  {
-    text: 'Alternative photographic printing processes',
-    className: 'pretext-cv-body',
-    el: 'span',
-  },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  { text: 'Imagerie — Casa de Imagens Lisboa, Portugal', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2024) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Classical Bookbinding Workshop', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  { text: 'Artlier, Lisboa, Portugal', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2023) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Ceramics Club', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  { text: 'Corrente, Lisboa, Portugal', className: 'pretext-cv-body', el: 'span' },
-];
-
-const TEXT_CV_RESIDENCIES_RUNS = [
-  { text: '(2025) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Provisional School for Nothing', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' ', className: 'pretext-plain', el: 'span' },
-  { text: 'Associação Provisória, Sabóia, Portugal', className: 'pretext-cv-body', el: 'span' },
-];
-
-const TEXT_CV_WORK_RUNS = [
-  { text: '(01.2023–present) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Data Scientist / ML Engineer', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Nokia', className: 'pretext-cv-strong', el: 'span' },
-  { text: ', Lisboa, Portugal', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(12.2023–03.2024) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Research Assistant', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Tallinn University (TLU)', className: 'pretext-cv-strong', el: 'span' },
-  { text: ', Estonia', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(03.2022–07.2022) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Invited Teaching Assistant', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'IST', className: 'pretext-cv-strong', el: 'span' },
-  { text: ', Lisboa', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(09.2021–10.2022) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Research Intern', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'INESC-ID', className: 'pretext-cv-strong', el: 'span' },
-  { text: ', Lisboa', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2024, 2025) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Programming Team', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — Olhares do Mediterrâneo', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2022, 2023) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Production Support', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — Doclisboa', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2022) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Production Support', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — Queer Lisboa', className: 'pretext-cv-body', el: 'span' },
-  { text: '  ', className: 'pretext-plain', el: 'span' },
-  { text: '(2020–2022) ', className: 'pretext-cv-body', el: 'span' },
-  { text: 'Co-Founder', className: 'pretext-cv-strong', el: 'span' },
-  { text: ' — Kino Kave Cineclub', className: 'pretext-cv-body', el: 'span' },
-];
+const TEXT_CV_BIRTH_RUNS = [{ text: 'b. 1999, Viseu · Lisboa', className: 'pretext-meta', el: 'span', i18n: 'cv.birth' }];
 
 let globalLH = 24;
 let bioLH = 24;
 let contactLH = 24;
 let cvBirthLH = 24;
-let cvEduLH = 24;
-let cvWorkshopsLH = 24;
-let cvResLH = 24;
-let cvWorkLH = 24;
 let modRef = null;
 let mouseX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
 let mouseY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
@@ -211,6 +131,8 @@ let fontsDirty = true;
 let mouseSkewRaf = null;
 let infoGlyphCache = [];
 let lastGlyphScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+let holdMouseSkew = false;
+let lastLayoutWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
 const PASS_RADIUS = 62;
 const PASS_FORCE = 11;
 const PASS_EASE = 0.34;
@@ -223,13 +145,28 @@ function interFragmentGapPx(mount) {
   return FRAG_GAP_PX + em * INTER_FRAG_EM;
 }
 
+function layoutWidth() {
+  return document.documentElement.clientWidth || window.innerWidth;
+}
+
+function isRealLayoutWidthChange() {
+  const w = layoutWidth();
+  if (w < 60) return false;
+  if (Math.abs(w - lastLayoutWidth) < 8) return false;
+  lastLayoutWidth = w;
+  return true;
+}
+
 function wantsMouseSkew() {
-  return (
+  return typeof window !== 'undefined' && !wantsReducedMotion();
+}
+
+function passRadius() {
+  const coarse =
     typeof window !== 'undefined' &&
     window.matchMedia &&
-    window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
-    !wantsReducedMotion()
-  );
+    window.matchMedia('(pointer: coarse)').matches;
+  return coarse ? 96 : PASS_RADIUS;
 }
 
 function wantsReducedMotion() {
@@ -389,15 +326,23 @@ function prepareRunsFor(mod, runs) {
   }
 }
 
-function prepareAllPretextRuns(mod) {
-  prepareRunsFor(mod, TEXT_RUNS);
-  prepareRunsFor(mod, TEXT_BIO_RUNS);
-  prepareRunsFor(mod, TEXT_CONTACT_RUNS);
-  prepareRunsFor(mod, TEXT_CV_BIRTH_RUNS);
-  prepareRunsFor(mod, TEXT_CV_EDUCATION_RUNS);
-  prepareRunsFor(mod, TEXT_CV_WORKSHOPS_RUNS);
-  prepareRunsFor(mod, TEXT_CV_RESIDENCIES_RUNS);
-  prepareRunsFor(mod, TEXT_CV_WORK_RUNS);
+function currentLang() {
+  return typeof window.getSiteLang === 'function' ? window.getSiteLang() : document.documentElement.lang || 'pt';
+}
+
+function tRun(key, fallback) {
+  return typeof window.tSite === 'function' ? window.tSite(key) : fallback;
+}
+
+function syncRunI18n(runs) {
+  for (const run of runs) {
+    if (!run.i18n) continue;
+    const next = tRun(run.i18n, run.text);
+    if (next === run.text) continue;
+    run.text = next;
+    run.prepared = null;
+    run.__pretextSrc = '';
+  }
 }
 
 function resetRunCursors(runs) {
@@ -416,6 +361,16 @@ function getObstaclesForContactPanel() {
 
 function getObstaclesForCvPanel() {
   return [];
+}
+
+function prepareAllPretextRuns(mod) {
+  syncRunI18n(TEXT_RUNS);
+  syncRunI18n(TEXT_BIO_RUNS);
+  syncRunI18n(TEXT_CV_BIRTH_RUNS);
+  prepareRunsFor(mod, TEXT_RUNS);
+  prepareRunsFor(mod, TEXT_BIO_RUNS);
+  prepareRunsFor(mod, TEXT_CONTACT_RUNS);
+  prepareRunsFor(mod, TEXT_CV_BIRTH_RUNS);
 }
 
 function applyFontMetricsIfNeeded() {
@@ -443,30 +398,6 @@ function applyFontMetricsIfNeeded() {
         cvBirthLH = v;
       }, { skipNameShift: true });
     }
-    const ve = document.getElementById('cv-pretext-education');
-    if (ve) {
-      syncMetricsForRuns(ve, TEXT_CV_EDUCATION_RUNS, (v) => {
-        cvEduLH = v;
-      }, { skipNameShift: true });
-    }
-    const vw = document.getElementById('cv-pretext-workshops');
-    if (vw) {
-      syncMetricsForRuns(vw, TEXT_CV_WORKSHOPS_RUNS, (v) => {
-        cvWorkshopsLH = v;
-      }, { skipNameShift: true });
-    }
-    const vr = document.getElementById('cv-pretext-residencies');
-    if (vr) {
-      syncMetricsForRuns(vr, TEXT_CV_RESIDENCIES_RUNS, (v) => {
-        cvResLH = v;
-      }, { skipNameShift: true });
-    }
-    const vwk = document.getElementById('cv-pretext-work');
-    if (vwk) {
-      syncMetricsForRuns(vwk, TEXT_CV_WORK_RUNS, (v) => {
-        cvWorkLH = v;
-      }, { skipNameShift: true });
-    }
 
     fontsDirty = false;
   }
@@ -487,10 +418,8 @@ function queueLayout() {
     runBioLayout();
     runContactLayout();
     runCvBirthLayout();
-    runCvSectionLayout('cv-pretext-education', TEXT_CV_EDUCATION_RUNS, cvEduLH);
-    runCvSectionLayout('cv-pretext-workshops', TEXT_CV_WORKSHOPS_RUNS, cvWorkshopsLH);
-    runCvSectionLayout('cv-pretext-residencies', TEXT_CV_RESIDENCIES_RUNS, cvResLH);
-    runCvSectionLayout('cv-pretext-work', TEXT_CV_WORK_RUNS, cvWorkLH);
+    wrapInfoStaticGlyphs();
+    sizeWorksBoxes();
     cacheInfoGlyphs();
     applyInfoMouseSkew();
   });
@@ -574,8 +503,6 @@ function layoutRunsIntoMount(mount, runs, lhStride, options) {
 
   const textRect = mount.getBoundingClientRect();
   if (textRect.width < 60) {
-    mount.replaceChildren();
-    mount.style.minHeight = '';
     return;
   }
 
@@ -705,6 +632,13 @@ function patchMainPretextNavAria() {
     if (current) el.setAttribute('aria-current', 'page');
     else el.removeAttribute('aria-current');
   });
+  const lang = currentLang();
+  document.querySelectorAll('.pretext-nav-link[data-lang]').forEach((el) => {
+    const current = el.dataset.lang === lang;
+    el.classList.toggle('is-current', current);
+    if (current) el.setAttribute('aria-current', 'true');
+    else el.removeAttribute('aria-current');
+  });
 }
 
 function runBioLayout() {
@@ -761,27 +695,18 @@ function runCvBirthLayout() {
   });
 }
 
-function runCvSectionLayout(mountId, runs, lhStride) {
-  const cvPanel = document.getElementById('info-inline');
-  const mount = document.getElementById(mountId);
-  if (!mount) return;
-  if (!cvPanel?.classList.contains('is-open')) {
-    mount.replaceChildren();
-    mount.style.minHeight = '';
-    return;
-  }
-  const content = mount.closest('.content');
-  if (content && !content.classList.contains('is-open')) {
-    mount.replaceChildren();
-    mount.style.minHeight = '';
-    return;
-  }
-  layoutRunsIntoMount(mount, runs, lhStride, {
-    obstacleGetter: getObstaclesForCvPanel,
-    alignMode: 'left',
-    useNameBaseline: false,
-    useMouseSkew: false,
-    splitGlyphs: true,
+function wrapInfoStaticGlyphs() {
+  if (!isFlowOpen()) return;
+  const root = isWorksOpen()
+    ? document.getElementById('works-inline')
+    : document.getElementById('info-inline');
+  if (!root) return;
+  const targets = isWorksOpen()
+    ? root.querySelectorAll('.works-section, .works-title, .works-meta, .works-year')
+    : root.querySelectorAll('.info-flow');
+  targets.forEach((el) => {
+    if (el.querySelector('.pretext-glyph')) return;
+    wrapTextAsGlyphs(el);
   });
 }
 
@@ -797,33 +722,87 @@ function wrapTextAsGlyphs(el) {
   }
 }
 
+function measureNowrapWidth(el) {
+  if (!el) return 0;
+  const prev = el.style.whiteSpace;
+  el.style.whiteSpace = 'nowrap';
+  const w = el.scrollWidth;
+  el.style.whiteSpace = prev;
+  return w;
+}
+
+function sizeWorksBoxes() {
+  if (!isFlowOpen()) return;
+  const root = isWorksOpen()
+    ? document.getElementById('works-inline')
+    : document.getElementById('info-inline');
+  if (!root) return;
+  const list = root.querySelector('.works-list');
+  if (!list) return;
+  if (isWorksOpen()) {
+    list.querySelectorAll('.works-entry').forEach((entry) => {
+      entry.style.width = '';
+      entry.style.maxWidth = '100%';
+    });
+    return;
+  }
+  const avail = list.clientWidth;
+  list.querySelectorAll('.works-entry').forEach((entry) => {
+    if (avail < 40) {
+      if (entry.style.width) entry.style.width = '';
+      return;
+    }
+    const cs = getComputedStyle(entry);
+    const chrome =
+      (parseFloat(cs.paddingLeft) || 0) +
+      (parseFloat(cs.paddingRight) || 0) +
+      (parseFloat(cs.borderLeftWidth) || 0) +
+      (parseFloat(cs.borderRightWidth) || 0);
+    let inner = 0;
+    entry.querySelectorAll('.works-title, .works-meta, .works-year').forEach((line) => {
+      inner = Math.max(inner, measureNowrapWidth(line));
+    });
+    const w = Math.min(Math.ceil(inner + chrome + 1), avail);
+    const next = `${Math.max(w, chrome + 8)}px`;
+    if (entry.style.width !== next) entry.style.width = next;
+    if (entry.style.maxWidth !== '100%') entry.style.maxWidth = '100%';
+  });
+}
+
 function cacheInfoGlyphs() {
   infoGlyphCache = [];
-  if (!isInfoOpen()) return;
-  const nodes = document.querySelectorAll('#info-inline .pretext-glyph');
-  for (let i = 0; i < nodes.length; i++) {
-    const el = nodes[i];
-    el.style.transform = '';
-    el.style.removeProperty('text-shadow');
-    const r = el.getBoundingClientRect();
-    infoGlyphCache.push({
-      el,
-      x: r.left + r.width * 0.5,
-      y: r.top + r.height * 0.5,
-      tx: 0,
-      ty: 0,
-    });
+  const roots = [document.getElementById('pretext-lines')];
+  if (isWorksOpen()) roots.push(document.getElementById('works-inline'));
+  else if (isInfoOpen()) roots.push(document.getElementById('info-inline'));
+  for (let r = 0; r < roots.length; r++) {
+    const root = roots[r];
+    if (!root) continue;
+    const nodes = root.querySelectorAll('.pretext-glyph');
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i];
+      el.style.transform = '';
+      el.style.removeProperty('text-shadow');
+      const box = el.getBoundingClientRect();
+      infoGlyphCache.push({
+        el,
+        x: box.left + box.width * 0.5,
+        y: box.top + box.height * 0.5,
+        tx: 0,
+        ty: 0,
+      });
+    }
   }
   lastGlyphScrollY = window.scrollY;
 }
 
 function applyInfoMouseSkew() {
-  if (!isInfoOpen() || !wantsMouseSkew()) {
+  if (holdMouseSkew || !wantsMouseSkew()) {
     mouseSkewRaf = null;
     return;
   }
   if (infoGlyphCache.length === 0) cacheInfoGlyphs();
-  const r2 = PASS_RADIUS * PASS_RADIUS;
+  const radius = passRadius();
+  const r2 = radius * radius;
   let moving = false;
   for (let i = 0; i < infoGlyphCache.length; i++) {
     const g = infoGlyphCache[i];
@@ -834,7 +813,7 @@ function applyInfoMouseSkew() {
     let ty = 0;
     if (d2 < r2) {
       const d = Math.sqrt(d2) || 1;
-      const t = 1 - d / PASS_RADIUS;
+      const t = 1 - d / radius;
       const e = t * t * t;
       tx = (dx / d) * PASS_FORCE * e;
       ty = (dy / d) * PASS_FORCE * 0.35 * e;
@@ -884,9 +863,16 @@ function createInnerEl(run, text) {
     if (run.id) b.id = run.id;
     if (run.nav) {
       b.dataset.nav = run.nav;
-      if (run.nav === currentNav()) {
+      if (run.className.includes('pretext-nav-link') && run.nav === currentNav()) {
         b.classList.add('is-current');
         b.setAttribute('aria-current', 'page');
+      }
+    }
+    if (run.lang) {
+      b.dataset.lang = run.lang;
+      if (run.lang === currentLang()) {
+        b.classList.add('is-current');
+        b.setAttribute('aria-current', 'true');
       }
     }
     return b;
@@ -921,44 +907,16 @@ function runLayout() {
     alignMode: 'left',
     useNameBaseline: true,
     useMouseSkew: false,
+    splitGlyphs: true,
   });
 
   patchMainPretextNavAria();
 
-  fitPretextToViewport(mount);
+  const outer = mount.closest('.pretext-fit-outer');
+  mount.style.transform = '';
+  if (outer) outer.style.height = '';
 
   window.dispatchEvent(new CustomEvent('pretext-layout-done'));
-}
-
-const FIT_PAD = 20;
-const FIT_MIN_SCALE = 0.42;
-
-function fitPretextToViewport(mount) {
-  const outer = mount.closest('.pretext-fit-outer');
-  if (!outer) return;
-
-  mount.style.transform = '';
-  outer.style.height = '';
-
-  if (isInfoOpen() || isWorksOpen()) return;
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const rawH = mount.offsetHeight;
-      if (rawH < 8) return;
-
-      const top = mount.getBoundingClientRect().top;
-      const avail = window.innerHeight - top - FIT_PAD;
-      if (avail < 80 || rawH <= avail) return;
-
-      let s = (avail / rawH) * 0.98;
-      if (s < FIT_MIN_SCALE) s = FIT_MIN_SCALE;
-
-      mount.style.transformOrigin = 'top left';
-      mount.style.transform = `scale(${s})`;
-      outer.style.height = `${rawH * s}px`;
-    });
-  });
 }
 
 function plainFallback(mount) {
@@ -968,6 +926,7 @@ function plainFallback(mount) {
 async function boot() {
   const mount = document.getElementById('pretext-lines');
   if (!mount) return;
+  if (!mount.textContent.trim()) plainFallback(mount);
 
   try {
     await document.fonts.ready;
@@ -979,34 +938,50 @@ async function boot() {
   try {
     mod = await import('https://esm.sh/@chenglou/pretext@0.0.5');
   } catch (e) {
-    plainFallback(mount);
     return;
   }
   modRef = mod;
   fontsDirty = true;
 
+  lastLayoutWidth = layoutWidth();
+
   window.addEventListener(
     'resize',
     () => {
-      fontsDirty = true;
-      scheduleLayout();
-    },
-    { passive: true }
-  );
-  window.visualViewport?.addEventListener(
-    'resize',
-    () => {
+      if (!isRealLayoutWidthChange()) return;
       fontsDirty = true;
       scheduleLayout();
     },
     { passive: true }
   );
   window.addEventListener(
-    'mousemove',
+    'orientationchange',
+    () => {
+      window.setTimeout(() => {
+        if (!isRealLayoutWidthChange()) return;
+        fontsDirty = true;
+        scheduleLayout();
+      }, 280);
+    },
+    { passive: true }
+  );
+  window.addEventListener(
+    'pointermove',
+    (e) => {
+      holdMouseSkew = false;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      if (!wantsMouseSkew()) return;
+      requestInfoMouseSkew();
+    },
+    { passive: true }
+  );
+  window.addEventListener(
+    'pointerdown',
     (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      if (!isInfoOpen() || !wantsMouseSkew()) return;
+      if (!wantsMouseSkew()) return;
       requestInfoMouseSkew();
     },
     { passive: true }
@@ -1015,12 +990,20 @@ async function boot() {
     'pointerdown',
     (e) => {
       const el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
-      const btn = el?.closest('.pretext-nav-link[data-nav]');
+      const langBtn = el?.closest('[data-lang]');
+      if (langBtn && mount.contains(langBtn)) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.setSiteLang === 'function') window.setSiteLang(langBtn.dataset.lang);
+        return;
+      }
+      const btn = el?.closest('[data-nav]');
       if (!btn || !mount.contains(btn)) return;
       e.preventDefault();
       e.stopPropagation();
       const nav = btn.dataset.nav;
       if (nav && typeof window.setSiteView === 'function') {
+        holdMouseSkew = true;
         window.setSiteView(nav);
       }
     },
@@ -1041,13 +1024,36 @@ async function boot() {
   window.addEventListener(
     'scrollend',
     () => {
-      if (isInfoOpen()) cacheInfoGlyphs();
+      if (isFlowOpen() || document.getElementById('pretext-lines')) cacheInfoGlyphs();
     },
     { passive: true, capture: true }
   );
   window.addEventListener('pretext-dirty', scheduleLayout);
+  window.addEventListener('site-view-change', () => {
+    holdMouseSkew = true;
+  });
+  window.addEventListener('site-lang-change', () => {
+    fontsDirty = true;
+    scheduleLayout();
+  });
 
-  const roNav = new ResizeObserver(() => scheduleLayout());
+  const roWidths = new WeakMap();
+  const roNav = new ResizeObserver((entries) => {
+    let widthChanged = false;
+    for (const entry of entries) {
+      const w = entry.contentRect.width;
+      const prev = roWidths.get(entry.target);
+      if (prev == null) {
+        roWidths.set(entry.target, w);
+        continue;
+      }
+      if (Math.abs(w - prev) >= 8) {
+        roWidths.set(entry.target, w);
+        widthChanged = true;
+      }
+    }
+    if (widthChanged) scheduleLayout();
+  });
   roNav.observe(mount);
   const tb = document.querySelector('.text-block');
   if (tb) roNav.observe(tb);
@@ -1059,16 +1065,10 @@ async function boot() {
   if (contactPretext) roInfo.observe(contactPretext);
   const bioPretext = document.getElementById('info-bio-lines');
   if (bioPretext) roInfo.observe(bioPretext);
-  for (const id of [
-    'cv-pretext-birth',
-    'cv-pretext-education',
-    'cv-pretext-workshops',
-    'cv-pretext-residencies',
-    'cv-pretext-work',
-  ]) {
-    const el = document.getElementById(id);
-    if (el) roInfo.observe(el);
-  }
+  const birthPretext = document.getElementById('cv-pretext-birth');
+  if (birthPretext) roInfo.observe(birthPretext);
+  const worksPanel = document.getElementById('works-inline');
+  if (worksPanel) roInfo.observe(worksPanel);
 
   scheduleLayout();
 }

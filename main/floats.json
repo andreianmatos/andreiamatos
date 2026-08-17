@@ -1,0 +1,61 @@
+{
+  "note": "size = usual size. max = farthest it may grow. giants = how many enormous/giant washes can appear together. count = how many drawings appear each load.",
+  "count": {
+    "min": 8,
+    "max": 16,
+    "mobile": { "min": 5, "max": 10 }
+  },
+  "giants": {
+    "min": 1,
+    "max": 3,
+    "mobile": { "min": 1, "max": 2 }
+  },
+  "sizes": {
+    "very-small": 0.08,
+    "small": 0.12,
+    "medium": 0.18,
+    "big": 0.28,
+    "very-big": 0.36,
+    "huge": 0.55,
+    "enormous": 0.82,
+    "giant": 2.05
+  },
+  "defaultSize": "medium",
+  "items": [
+    { "file": "flower_photo.png", "size": "very-big", "max": "giant" },
+    { "file": "painted_flower.png", "size": "big", "max": "enormous" },
+    { "file": "photo_book.png", "size": "very-big", "max": "very-big" },
+    { "file": "angel_fuller.jpeg", "size": "big", "max": "big" },
+    { "file": "anjo.png", "size": "medium", "max": "enormous" },
+    { "file": "flor.png", "size": "big", "max": "giant" },
+    { "file": "laco.png", "size": "big", "max": "giant" },
+    { "file": "heart.png", "size": "medium", "max": "enormous" },
+    { "file": "heartlil.png", "size": "very-big", "max": "giant" },
+    { "file": "10.png", "size": "big", "max": "enormous" },
+    { "file": "drawn_butterfly.png", "size": "medium", "max": "big" },
+    { "file": "drawn_heart.png", "size": "medium", "max": "giant" },
+    { "file": "dr9.png", "size": "medium", "max": "giant" },
+    { "file": "6.png", "size": "medium", "max": "big" },
+    { "file": "ceramic_infinitepuzzle.png", "size": "big", "max": "very-big" },
+    { "file": "ceramic_butterfly.png", "size": "small", "max": "medium" },
+    { "file": "1.png", "size": "small", "max": "medium" },
+    { "file": "7.png", "size": "small", "max": "medium" },
+    { "file": "ph__2.png", "size": "big", "max": "very-big" },
+    { "file": "ceramic_jar.png", "size": "small", "max": "medium" },
+    { "file": "ceramic_jar2.png", "size": "small", "max": "medium" },
+    { "file": "hands.png", "size": "very-big", "max": "giant" },
+    { "file": "virgulnuvem.png", "size": "very-big", "max": "giant" },
+    { "file": "27073.png", "size": "big", "max": "giant" },
+    { "file": "drw2.png", "size": "medium", "max": "giant" },
+    { "file": "2flor3.png", "size": "medium", "max": "giant" },
+    { "file": "img (8).jpg", "size": "big", "max": "big" },
+    { "file": "drw (4)_no_bg.png", "size": "medium", "max": "big" },
+    { "file": "drw (10)_no_bg.png", "size": "medium", "max": "enormous" },
+    { "file": "drw (18)_no_bg.png", "size": "medium", "max": "giant" },
+    { "file": "drws (1)_no_bg.png", "size": "big", "max": "enormous" },
+    { "file": "drws (2)_no_bg.png", "size": "medium", "max": "giant" },
+    { "file": "drws (3)_no_bg.png", "size": "small", "max": "medium" },
+    { "file": "drws (5)_no_bg.png", "size": "small", "max": "big" },
+    { "file": "drws (8)_no_bg (1).png", "size": "medium", "max": "giant" }
+  ]
+}

@@ -1,17 +1,13 @@
-/* Scrollbar invisível na home (evita saltos de largura / relayout Pretext quando aparecia). */
-body.page-home.cv-open,
-body.page-home.contact-open,
-body.page-home.info-open,
-body.page-home.works-open {
+html,
+body {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
-body.page-home.cv-open::-webkit-scrollbar,
-body.page-home.contact-open::-webkit-scrollbar,
-body.page-home.info-open::-webkit-scrollbar,
-body.page-home.works-open::-webkit-scrollbar {
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
     width: 0;
     height: 0;
+    display: none;
     background: transparent;
 }
 
@@ -44,25 +40,42 @@ body, html {
     background-attachment: fixed;
     color: #0a0a0a;
     min-height: 100%;
-    min-height: 100dvh;
+    min-height: 100svh;
     width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
 }
 
-/* Home: contendo bloco para #drawings-layer (absolute + bottom:0 = altura do conteúdo) */
+/* Home: lock to the small viewport so the mobile URL bar cannot resize the page. */
 body.page-home {
     position: relative;
-    overflow-y: hidden;
+    overflow: hidden;
     height: 100%;
-    height: 100dvh;
+    height: 100svh;
+    overscroll-behavior: none;
+}
+
+html:has(body.page-home:not(.info-open):not(.works-open)) {
+    overflow: hidden;
+    height: 100%;
+    height: 100svh;
+    min-height: 100svh;
+    max-height: 100svh;
+    overscroll-behavior: none;
+}
+
+body.page-home:not(.info-open):not(.works-open) {
+    min-height: 100svh;
+    max-height: 100svh;
 }
 
 body.page-home.info-open,
 body.page-home.works-open {
+    overflow-x: hidden;
     overflow-y: auto;
     height: auto;
     min-height: 100dvh;
+    overscroll-behavior: auto;
     scroll-behavior: auto;
 }
 
@@ -75,7 +88,6 @@ body.page-home.works-open {
     bottom: 0;
     z-index: 900;
     pointer-events: none;
-    display: none;
 }
 #drawings-layer .drawing-item {
     pointer-events: auto;
@@ -91,18 +103,47 @@ body.page-home.works-open #drawings-layer {
     top: 0;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.55s cubic-bezier(0.33, 1, 0.68, 1), filter 0.2s ease;
+    transition: opacity 0.55s cubic-bezier(0.33, 1, 0.68, 1);
     touch-action: none;
     will-change: transform;
-    filter: drop-shadow(0 3px 14px rgba(0, 0, 0, 0.14));
+    mix-blend-mode: overlay;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    width: calc(var(--piece-scale, 0.18) * 100vmin);
+    width: calc(var(--piece-scale, 0.18) * 100svmin);
+}
+.drawing-item.is-wash {
+    mix-blend-mode: soft-light;
+    z-index: var(--wash-z, 0);
+}
+.drawing-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.drawing-item::selection,
+.drawing-item img::selection {
+    background: transparent;
+    color: inherit;
 }
 .drawing-item.appeared {
-    opacity: 1;
+    opacity: 0.88;
+}
+.drawing-item.is-wash.appeared {
+    opacity: 0.7;
 }
 @media (hover: hover) and (pointer: fine) {
     .drawing-item:hover {
         z-index: 2;
-        filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.28));
+        opacity: 1;
     }
     .cv-inline.pretext-cv .collapsible:hover {
         color: #2a2a2a;
@@ -117,12 +158,6 @@ body.page-home.works-open #drawings-layer {
 .drawing-item:active {
     cursor: grabbing;
 }
-.drawing-item img {
-    width: 100%;
-    height: auto;
-    display: block;
-    pointer-events: none;
-}
 
 img {
     border: 0;
@@ -133,7 +168,7 @@ img {
     position: relative;
     z-index: 1000;
     min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100svh;
     width: 100%;
     max-width: 100%;
     display: flex;
@@ -205,7 +240,7 @@ img {
     line-height: var(--lh-pretext);
 }
 
-#info-inline .pretext-glyph {
+.pretext-glyph {
     display: inline-block;
 }
 
@@ -216,15 +251,41 @@ img {
     line-height: inherit;
     font-weight: 700;
     font-style: normal;
-    cursor: default;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
     color: inherit;
-    pointer-events: none;
+    pointer-events: auto;
+    position: relative;
+    z-index: 5;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s ease;
+}
+.pretext-name::after {
+    content: '';
+    position: absolute;
+    inset: -0.55em -0.5em;
+}
+.pretext-name.is-current {
+    color: #6b0a0a;
+}
+.pretext-name:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
 
 .pretext-meta,
 .pretext-blurb,
 .pretext-plain {
     font-style: italic;
+    font-weight: 400;
+}
+
+.pretext-label {
+    font-style: normal;
     font-weight: 400;
 }
 
@@ -376,7 +437,9 @@ img {
 
 #info-inline.cv-inline.pretext-cv,
 #info-inline .pretext-lines,
-#info-inline .collapsible,
+#info-inline .works-list,
+#info-inline .works-section,
+#info-inline .works-entry,
 #works-inline.cv-inline.pretext-cv,
 #works-inline .works-list,
 #works-inline .works-section,
@@ -488,14 +551,46 @@ a {
     pointer-events: none;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 1.35rem;
+}
+.info-cv-list {
+    margin-top: 1.15rem;
+}
+
+#works-inline .works-list {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1.35rem 0.7rem;
+    align-items: start;
+}
+
+#works-inline .works-col {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    gap: 0.5rem;
+}
+
+#works-inline .works-entry {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 }
 .works-col {
     min-width: 0;
-    break-inside: avoid;
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.55rem 0.75rem;
 }
 .works-section {
-    margin: 0.15rem 0 0.75rem;
+    flex: 0 0 100%;
+    margin: 0 0 0.1rem;
     padding: 0;
     font-size: inherit;
     font-weight: 700;
@@ -504,16 +599,21 @@ a {
 }
 .works-entry {
     display: block;
-    margin: 0 0 0.55rem;
-    padding: 0.5rem 0.6rem 0.55rem;
-    line-height: 1.35;
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0.65rem 0.85rem 0.7rem;
+    line-height: 1.4;
     color: inherit;
     text-decoration: none;
     pointer-events: auto;
     border: 1px solid rgba(10, 10, 10, 0.62);
     background: rgba(244, 241, 234, 0.78);
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    font-style: normal;
 }
 .works-title {
     display: block;
@@ -528,30 +628,8 @@ a {
 .works-year {
     display: block;
     margin: 0.18rem 0 0;
-    font-style: italic;
+    font-style: normal;
     font-weight: 400;
-}
-
-@media screen and (min-width: 700px) {
-    .works-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: clamp(1.25rem, 3vw, 2.5rem);
-        row-gap: 1.35rem;
-        align-items: start;
-    }
-}
-
-@media screen and (min-width: 960px) {
-    .works-list {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media screen and (min-width: 1280px) {
-    .works-list {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
 }
 
 @media screen and (max-width: 800px) {
@@ -565,6 +643,7 @@ a {
         background-attachment: scroll;
     }
 
+    .pretext-name::after,
     .pretext-nav-link::after {
         inset: -0.7em -0.55em;
     }
@@ -578,6 +657,24 @@ a {
     .text-block a,
     .text-block button {
         touch-action: manipulation;
+    }
+
+    .works-list {
+        gap: 1rem;
+    }
+
+    #works-inline .works-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .works-col {
+        gap: 0.45rem 0.55rem;
+    }
+
+    .works-entry {
+        padding: 0.6rem 0.7rem 0.65rem;
     }
 }
 
