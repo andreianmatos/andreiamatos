@@ -73,6 +73,7 @@ const TEXT_BIO_RUNS = [
     className: 'pretext-blurb',
     el: 'span',
     i18n: 'bio.line',
+    breakBefore: true,
   },
 ];
 
@@ -372,12 +373,6 @@ function applyFontMetricsIfNeeded() {
     baselineShiftCache.clear();
     syncGlobalMetrics(mainMount);
 
-    const bioMount = document.getElementById('info-bio-lines');
-    if (bioMount) {
-      syncMetricsForRuns(bioMount, TEXT_BIO_RUNS, (v) => {
-        bioLH = v;
-      }, { skipNameShift: true });
-    }
     const cpm = document.getElementById('contact-pretext-lines');
     if (cpm) {
       syncMetricsForRuns(cpm, TEXT_CONTACT_RUNS, (v) => {
@@ -386,8 +381,9 @@ function applyFontMetricsIfNeeded() {
     }
     const vbm = document.getElementById('cv-pretext-birth');
     if (vbm) {
-      syncMetricsForRuns(vbm, TEXT_CV_BIRTH_RUNS, (v) => {
+      syncMetricsForRuns(vbm, [...TEXT_CV_BIRTH_RUNS, ...TEXT_BIO_RUNS], (v) => {
         cvBirthLH = v;
+        bioLH = v;
       }, { skipNameShift: true });
     }
 
@@ -407,7 +403,6 @@ function queueLayout() {
     if (!applyFontMetricsIfNeeded()) return;
     if (doNav) runLayout();
     else patchMainPretextNavAria();
-    runBioLayout();
     runContactLayout();
     runCvBirthLayout();
     wrapInfoStaticGlyphs();
@@ -520,6 +515,11 @@ function layoutRunsIntoMount(mount, runs, lhStride, options) {
       continue;
     }
 
+    if (run.breakBefore && xOffset > 0) {
+      y += lhStride;
+      xOffset = 0;
+    }
+
     let cursor = run.cursor;
     const cy = textRect.top + y + lhStride * 0.52;
     const seg = bestSegmentForY(textRect, cy, obstacles);
@@ -588,8 +588,9 @@ function layoutRunsIntoMount(mount, runs, lhStride, options) {
 
   const topsWithName = useNameBaseline ? collectTopsWithName(lines) : new Set();
 
-  const contentH = y + lhStride * 2;
-  mount.style.minHeight = `${Math.max(contentH, lhStride * 2)}px`;
+  const lastTop = lines.reduce((m, L) => Math.max(m, L.top), 0);
+  const contentH = lines.length ? lastTop + lhStride : 0;
+  mount.style.minHeight = `${contentH}px`;
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < lines.length; i++) {
@@ -633,24 +634,6 @@ function patchMainPretextNavAria() {
   });
 }
 
-function runBioLayout() {
-  const panel = document.getElementById('info-inline');
-  const mount = document.getElementById('info-bio-lines');
-  if (!mount) return;
-  if (!panel?.classList.contains('is-open')) {
-    mount.replaceChildren();
-    mount.style.minHeight = '';
-    return;
-  }
-  layoutRunsIntoMount(mount, TEXT_BIO_RUNS, bioLH, {
-    obstacleGetter: getObstaclesForContactPanel,
-    alignMode: 'left',
-    useNameBaseline: false,
-    useMouseSkew: false,
-    splitGlyphs: true,
-  });
-}
-
 function runContactLayout() {
   const panel = document.getElementById('info-inline');
   const mount = document.getElementById('contact-pretext-lines');
@@ -678,7 +661,7 @@ function runCvBirthLayout() {
     mount.style.minHeight = '';
     return;
   }
-  layoutRunsIntoMount(mount, TEXT_CV_BIRTH_RUNS, cvBirthLH, {
+  layoutRunsIntoMount(mount, [...TEXT_CV_BIRTH_RUNS, ...TEXT_BIO_RUNS], cvBirthLH, {
     obstacleGetter: getObstaclesForCvPanel,
     alignMode: 'left',
     useNameBaseline: false,
@@ -1057,8 +1040,6 @@ async function boot() {
   if (infoPanel) roInfo.observe(infoPanel);
   const contactPretext = document.getElementById('contact-pretext-lines');
   if (contactPretext) roInfo.observe(contactPretext);
-  const bioPretext = document.getElementById('info-bio-lines');
-  if (bioPretext) roInfo.observe(bioPretext);
   const birthPretext = document.getElementById('cv-pretext-birth');
   if (birthPretext) roInfo.observe(birthPretext);
   const worksPanel = document.getElementById('works-inline');
