@@ -29,17 +29,17 @@ const TEXT_RUNS = [
   },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
-    text: 'pt',
-    className: 'pretext-nav-link',
-    el: 'button',
-    lang: 'pt',
-  },
-  { text: ' : ', className: 'pretext-plain', el: 'span' },
-  {
     text: 'en',
     className: 'pretext-nav-link',
     el: 'button',
     lang: 'en',
+  },
+  { text: ' : ', className: 'pretext-plain', el: 'span' },
+  {
+    text: 'pt',
+    className: 'pretext-nav-link',
+    el: 'button',
+    lang: 'pt',
   },
   { text: ' · ', className: 'pretext-plain', el: 'span' },
   {
@@ -69,7 +69,7 @@ const TEXT_RUNS = [
 
 const TEXT_BIO_RUNS = [
   {
-    text: 'Computer scientist and artist.',
+    text: 'Computer scientist and artist',
     className: 'pretext-blurb',
     el: 'span',
     i18n: 'bio.line',

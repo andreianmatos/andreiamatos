@@ -3,7 +3,7 @@ const SITE_I18N = {
     'nav.home': 'index',
     'nav.about': 'about',
     'nav.works': 'works',
-    'bio.line': 'Computer scientist and artist.',
+    'bio.line': 'Computer scientist and artist',
     'cv.birth': 'born 1999 in Viseu, based in Lisboa',
     'contact.at': 'Contact at ',
     'contact.or': ' or ',
@@ -45,7 +45,7 @@ const SITE_I18N = {
     'nav.home': 'index',
     'nav.about': 'sobre',
     'nav.works': 'trabalhos',
-    'bio.line': 'Cientista da computação e artista.',
+    'bio.line': 'Cientista da computação e artista',
     'cv.birth': 'nascida em 1999 em Viseu, baseada em Lisboa',
     'contact.at': 'Contacto: ',
     'contact.or': ' ou ',
@@ -92,8 +92,7 @@ function detectSiteLang() {
   } catch (_) {
     /* ignore */
   }
-  const nav = (navigator.language || 'pt').toLowerCase();
-  return nav.startsWith('pt') ? 'pt' : 'en';
+  return 'en';
 }
 
 let siteLang = detectSiteLang();
