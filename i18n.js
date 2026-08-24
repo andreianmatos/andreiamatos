@@ -9,8 +9,7 @@ const SITE_I18N = {
     'contact.or': ' or ',
     'cv.education': 'education',
     'cv.workshops': 'workshops',
-    'cv.residencies': 'residencies',
-    'cv.exhibitions': 'exhibitions',
+    'cv.residencies': 'residencies + exhibitions',
     'cv.work': 'work experience',
     'cv.other': 'work experience: other',
     'edu.pg.title': 'Post-Graduation in Communication Sciences: Contemporary Culture and New Technologies',
@@ -42,6 +41,8 @@ const SITE_I18N = {
     'works.thesis.meta': "Master's thesis, Instituto Superior Técnico",
     'exh.stitulo.venue': 'Journal S/ Título × Gallery Procur.arte',
     'exh.stitulo.meta': 'Collective exhibition, 30 January – 15 February 2025',
+    'res.aderno.year': '30 August – 6 September 2026',
+    'res.psfn.year': '27 June – 13 July 2025',
   },
   pt: {
     'nav.home': 'index',
@@ -53,8 +54,7 @@ const SITE_I18N = {
     'contact.or': ' ou ',
     'cv.education': 'formação',
     'cv.workshops': 'oficinas',
-    'cv.residencies': 'residências',
-    'cv.exhibitions': 'exposições',
+    'cv.residencies': 'residências + exposições',
     'cv.work': 'experiência profissional',
     'cv.other': 'experiência profissional: outra',
     'edu.pg.title': 'Pós-graduação em Ciências da Comunicação: Cultura Contemporânea e Novas Tecnologias',
@@ -86,6 +86,8 @@ const SITE_I18N = {
     'works.thesis.meta': 'Dissertação de mestrado, Instituto Superior Técnico',
     'exh.stitulo.venue': 'Jornal S/ Título × Galeria Procur.arte',
     'exh.stitulo.meta': 'Exposição colectiva, 30 de janeiro – 15 de fevereiro 2025',
+    'res.aderno.year': '30 de agosto – 6 de setembro 2026',
+    'res.psfn.year': '27 de junho – 13 de julho 2025',
   },
 };
 

@@ -97,6 +97,25 @@ body.page-home.works-open #drawings-layer {
     display: none;
 }
 
+#chalk-trace {
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+}
+body.page-home.info-open #chalk-trace,
+body.page-home.works-open #chalk-trace {
+    display: none;
+}
+@media (pointer: coarse) {
+    #chalk-trace {
+        display: none;
+    }
+}
+
 .drawing-item {
     position: absolute;
     left: 0;
@@ -728,5 +747,8 @@ a {
     }
     .drawing-item {
         transition: none;
+    }
+    #chalk-trace {
+        display: none;
     }
 }

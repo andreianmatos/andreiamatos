@@ -28,29 +28,28 @@ const SIZE_PRESETS = {
     giant: 2.05,
 };
 const FLOATS_FALLBACK_ITEMS = [
-    { file: 'flower_photo.png', size: 'very-big' },
-    { file: 'painted_flower.png', size: 'big' },
-    { file: 'photo_book.png', size: 'very-big' },
-    { file: 'angel_fuller.jpeg', size: 'big' },
-    { file: 'anjo.png', size: 'medium' },
-    { file: 'flor.png', size: 'big' },
-    { file: 'laco.png', size: 'big' },
-    { file: 'heart.png', size: 'medium' },
-    { file: 'heartlil.png', size: 'small' },
-    { file: '10.png', size: 'big' },
-    { file: 'drawn_butterfly.png', size: 'medium' },
-    { file: 'drawn_heart.png', size: 'medium' },
-    { file: 'dr9.png', size: 'medium' },
-    { file: '6.png', size: 'medium' },
-    { file: 'ceramic_infinitepuzzle.png', size: 'big' },
-    { file: 'ceramic_butterfly.png', size: 'small' },
-    { file: '1.png', size: 'small' },
-    { file: '7.png', size: 'small' },
-    { file: 'ph__2.png', size: 'big' },
-    { file: 'ceramic_jar.png', size: 'small' },
-    { file: 'ceramic_jar2.png', size: 'small' },
-    { file: 'hands.png', size: 'medium' },
-    { file: 'drawings.png', size: 'big' },
+    { file: 'flower_photo.png', size: 'very-big', max: 'giant' },
+    { file: 'painted_flower.png', size: 'big', max: 'huge' },
+    { file: 'photo_book.png', size: 'very-big', max: 'giant' },
+    { file: 'angel_fuller.jpeg', size: 'big', max: 'giant' },
+    { file: 'anjo.png', size: 'medium', max: 'enormous' },
+    { file: 'flor.png', size: 'big', max: 'giant' },
+    { file: 'laco.png', size: 'big', max: 'giant' },
+    { file: 'heart.png', size: 'medium', max: 'huge' },
+    { file: 'heartlil.png', size: 'small', max: 'medium' },
+    { file: '10.png', size: 'big', max: 'giant' },
+    { file: 'drawn_butterfly.png', size: 'medium', max: 'big' },
+    { file: 'drawn_heart.png', size: 'medium', max: 'big' },
+    { file: 'dr9.png', size: 'medium', max: 'enormous' },
+    { file: '6.png', size: 'medium', max: 'big' },
+    { file: 'ceramic_infinitepuzzle.png', size: 'big', max: 'huge' },
+    { file: 'ceramic_butterfly.png', size: 'small', max: 'medium' },
+    { file: '1.png', size: 'small', max: 'medium' },
+    { file: '7.png', size: 'small', max: 'medium' },
+    { file: 'ph__2.png', size: 'big', max: 'giant' },
+    { file: 'ceramic_jar.png', size: 'small', max: 'medium' },
+    { file: 'ceramic_jar2.png', size: 'small', max: 'medium' },
+    { file: 'hands.png', size: 'very-big', max: 'giant' },
 ];
 
 function pageDirectoryPath() {
@@ -469,6 +468,109 @@ function prefersReducedMotion() {
     );
 }
 
+function isHomeView() {
+    return (
+        !document.body.classList.contains('info-open') &&
+        !document.body.classList.contains('works-open')
+    );
+}
+
+function initChalkTrace() {
+    const canvas = document.getElementById('chalk-trace');
+    if (!canvas) return;
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    if (!finePointer.matches || prefersReducedMotion()) return;
+
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let cssW = 0;
+    let cssH = 0;
+    let last = null;
+    let lastT = 0;
+    let raf = 0;
+
+    function fitCanvas() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        cssW = window.innerWidth;
+        cssH = window.innerHeight;
+        canvas.width = Math.max(1, Math.floor(cssW * dpr));
+        canvas.height = Math.max(1, Math.floor(cssH * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        last = null;
+    }
+
+    function stampChalk(x, y, speed) {
+        const spread = 2.4 + Math.min(speed / 22, 2.8);
+        const grains = 4 + ((Math.random() * 5) | 0);
+        for (let i = 0; i < grains; i++) {
+            const jx = (Math.random() - 0.5) * spread * 2.4;
+            const jy = (Math.random() - 0.5) * spread * 2.4;
+            const s = 0.4 + Math.random() * 1.7;
+            ctx.fillStyle = `rgba(46, 40, 32, ${0.04 + Math.random() * 0.1})`;
+            ctx.fillRect(x + jx, y + jy, s, s);
+        }
+    }
+
+    function drawSegment(x0, y0, x1, y1, dt) {
+        const dist = Math.hypot(x1 - x0, y1 - y0);
+        if (dist < 0.4) return;
+        const speed = dt > 0 ? dist / dt : dist;
+        ctx.strokeStyle = 'rgba(52, 46, 38, 0.14)';
+        ctx.lineWidth = 1.7 + Math.min(speed * 0.04, 1.6);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+
+        const steps = Math.max(1, Math.ceil(dist / 2.4));
+        for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            stampChalk(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, speed);
+        }
+    }
+
+    function onMove(e) {
+        if (e.pointerType && e.pointerType !== 'mouse') return;
+        if (!isHomeView()) {
+            last = null;
+            return;
+        }
+        const now = performance.now();
+        if (last && now - lastT < 80) {
+            drawSegment(last.x, last.y, e.clientX, e.clientY, now - lastT);
+        }
+        last = { x: e.clientX, y: e.clientY };
+        lastT = now;
+    }
+
+    function fade() {
+        raf = requestAnimationFrame(fade);
+        if (!isHomeView()) return;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = 'rgba(0,0,0,0.012)';
+        ctx.fillRect(0, 0, cssW, cssH);
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
+    fitCanvas();
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('blur', () => {
+        last = null;
+    });
+    document.addEventListener('mouseleave', () => {
+        last = null;
+    });
+    window.addEventListener('resize', fitCanvas, { passive: true });
+    window.addEventListener('site-view-change', () => {
+        last = null;
+        if (!isHomeView()) ctx.clearRect(0, 0, cssW, cssH);
+    });
+    raf = requestAnimationFrame(fade);
+}
+
 function setCvPanelOpen(open) {
     const panel = document.getElementById('cv-inline');
     if (!panel) return;
@@ -689,6 +791,7 @@ async function findWorksThumb(dir, index) {
     const fromIndex = index[dir];
     const listed = await listWorksFolderImages(dir);
     const known = [
+        'thumb.jpg',
         ...(Array.isArray(fromIndex) ? fromIndex : fromIndex ? [fromIndex] : []),
         ...listed.filter((name) => /^thumb\./i.test(name)),
         ...listed,
@@ -725,6 +828,7 @@ function applyWorksThumb(entry, url) {
         img.loading = 'lazy';
         img.decoding = 'async';
         img.draggable = false;
+        img.sizes = '(max-width: 800px) 92vw, (max-width: 1200px) 30vw, 18vw';
         entry.insertBefore(img, entry.firstChild);
     }
     img.src = url;
@@ -1131,6 +1235,7 @@ function initCvInline() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initCvInline();
+    initChalkTrace();
     setSiteView('home');
     document.addEventListener('click', (e) => {
         const langBtn = e.target.closest?.('[data-lang]');
