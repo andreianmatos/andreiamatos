@@ -29,9 +29,9 @@
         { "file": "7.png", "size": "small", "max": "medium" },
         { "file": "ceramic_jar.png", "size": "small", "max": "medium" },
         { "file": "ceramic_jar2.png", "size": "small", "max": "medium" },
-        { "file": "caoceramica.png", "size": "medium", "max": "big" },
-        { "file": "gatoasasceramica.png", "size": "medium", "max": "big" },
-        { "file": "gatoraboceramica.png", "size": "medium", "max": "big" },
+        { "file": "caoceramica.png", "size": "medium", "max": "very-big" },
+        { "file": "gatoasasceramica.png", "size": "medium", "max": "very-big" },
+        { "file": "gatoraboceramica.png", "size": "medium", "max": "very-big" },
         { "file": "caocaixaceramica.png", "size": "medium", "max": "very-big" }
       ]
     },
@@ -55,7 +55,7 @@
         { "file": "anjo.png", "size": "medium", "max": "enormous" },
         { "file": "laco.png", "size": "big", "max": "giant" },
         { "file": "painted_flower.png", "size": "big", "max": "enormous" },
-        { "file": "borboleta_vrede.png", "size": "medium", "max": "big" }
+        { "file": "borboleta_vrede.png", "size": "medium", "max": "verybig" }
       ]
     },
     "img": {
