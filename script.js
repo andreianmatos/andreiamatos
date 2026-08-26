@@ -2,7 +2,7 @@ const CONFIG = {
     floatsEnabled: true,
     /** Width as a fraction of the shorter screen edge (`vmin`). Same on every device. */
     pieces: { minScale: 0.15, maxScale: 0.26 },
-    paths: { items: 'main/' },
+    paths: { items: 'main/', thumbs: 'main/thumbs/' },
     /** Movimento flutuante: vx/vy por frame (~60fps). Lento — menu, não dança. */
     drift: {
         vMax: 0.28,
@@ -27,30 +27,60 @@ const SIZE_PRESETS = {
     enormous: 0.82,
     giant: 2.05,
 };
-const FLOATS_FALLBACK_ITEMS = [
-    { file: 'flower_photo.png', size: 'very-big', max: 'giant' },
-    { file: 'painted_flower.png', size: 'big', max: 'huge' },
-    { file: 'photo_book.png', size: 'very-big', max: 'giant' },
-    { file: 'angel_fuller.jpeg', size: 'big', max: 'giant' },
-    { file: 'anjo.png', size: 'medium', max: 'enormous' },
-    { file: 'flor.png', size: 'big', max: 'giant' },
-    { file: 'laco.png', size: 'big', max: 'giant' },
-    { file: 'heart.png', size: 'medium', max: 'huge' },
-    { file: 'heartlil.png', size: 'small', max: 'medium' },
-    { file: '10.png', size: 'big', max: 'giant' },
-    { file: 'drawn_butterfly.png', size: 'medium', max: 'big' },
-    { file: 'drawn_heart.png', size: 'medium', max: 'big' },
-    { file: 'dr9.png', size: 'medium', max: 'enormous' },
-    { file: '6.png', size: 'medium', max: 'big' },
-    { file: 'ceramic_infinitepuzzle.png', size: 'big', max: 'huge' },
-    { file: 'ceramic_butterfly.png', size: 'small', max: 'medium' },
-    { file: '1.png', size: 'small', max: 'medium' },
-    { file: '7.png', size: 'small', max: 'medium' },
-    { file: 'ph__2.png', size: 'big', max: 'giant' },
-    { file: 'ceramic_jar.png', size: 'small', max: 'medium' },
-    { file: 'ceramic_jar2.png', size: 'small', max: 'medium' },
-    { file: 'hands.png', size: 'very-big', max: 'giant' },
-];
+const RANDOM_BOXES = ['ceram', 'drw', 'obj', 'img'];
+const FLOATS_FALLBACK_BOXES = {
+    bg: {
+        items: [
+            { file: 'heartlil.png', size: 'giant', max: 'giant' },
+            { file: 'hands.png', size: 'giant', max: 'giant' },
+            { file: 'drws (1)_no_bg.png', size: 'giant', max: 'giant' },
+        ],
+    },
+    ceram: {
+        items: [
+            { file: 'ceramic_infinitepuzzle.png', size: 'big', max: 'very-big' },
+            { file: 'ceramic_butterfly.png', size: 'small', max: 'medium' },
+            { file: '1.png', size: 'small', max: 'medium' },
+            { file: '7.png', size: 'small', max: 'medium' },
+            { file: 'ceramic_jar.png', size: 'small', max: 'medium' },
+            { file: 'ceramic_jar2.png', size: 'small', max: 'medium' },
+            { file: 'caoceramica.png', size: 'medium', max: 'big' },
+            { file: 'gatoasasceramica.png', size: 'medium', max: 'big' },
+            { file: 'gatoraboceramica.png', size: 'medium', max: 'big' },
+            { file: 'caocaixaceramica.png', size: 'medium', max: 'very-big' },
+        ],
+    },
+    drw: {
+        items: [
+            { file: 'drawn_butterfly.png', size: 'medium', max: 'big' },
+            { file: 'drawn_heart.png', size: 'medium', max: 'giant' },
+            { file: 'drw (4)_no_bg.png', size: 'medium', max: 'big' },
+            { file: 'drw (10)_no_bg.png', size: 'medium', max: 'enormous' },
+            { file: 'drws (2)_no_bg.png', size: 'medium', max: 'giant' },
+            { file: 'drws (3)_no_bg.png', size: 'small', max: 'medium' },
+            { file: 'drws (5)_no_bg.png', size: 'small', max: 'big' },
+            { file: 'drws (8)_no_bg (1).png', size: 'medium', max: 'giant' },
+            { file: 'flor.png', size: 'big', max: 'giant' },
+            { file: 'heart.png', size: 'medium', max: 'enormous' },
+            { file: '2flor3.png', size: 'medium', max: 'giant' },
+        ],
+    },
+    obj: {
+        items: [
+            { file: 'anjo.png', size: 'medium', max: 'enormous' },
+            { file: 'laco.png', size: 'big', max: 'giant' },
+            { file: 'painted_flower.png', size: 'big', max: 'enormous' },
+            { file: 'borboleta_vrede.png', size: 'small', max: 'medium' },
+        ],
+    },
+    img: {
+        items: [
+            { file: 'img (8).jpg', size: 'big', max: 'big' },
+            { file: 'flower_photo.png', size: 'very-big', max: 'giant' },
+            { file: 'ph__2.png', size: 'big', max: 'very-big' },
+        ],
+    },
+};
 
 function pageDirectoryPath() {
     let p = window.location.pathname;
@@ -108,83 +138,71 @@ async function loadJsonAsset(relativePath) {
     return null;
 }
 
-let floatCountRange = { min: 5, max: 9, mobileMin: 3, mobileMax: 5 };
-let floatGiantRange = { min: 1, max: 3, mobileMin: 1, mobileMax: 2 };
+let floatBgPick = 2;
+let floatPerBoxMin = 1;
+let floatPerBoxMax = 3;
 
-function parseCountRange(raw, fallback = { min: 5, max: 9, mobileMin: 3, mobileMax: 5 }) {
-    if (raw == null) return { ...fallback };
-    if (typeof raw === 'number' && Number.isFinite(raw)) {
-        const n = Math.max(0, Math.round(raw));
-        return { min: n, max: n, mobileMin: n, mobileMax: n };
-    }
-    if (typeof raw !== 'object') return { ...fallback };
-    const min = Math.max(0, Math.round(Number(raw.min ?? fallback.min)));
-    const max = Math.max(min, Math.round(Number(raw.max ?? fallback.max)));
-    const mob = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : null;
-    const mobileMin = Math.max(0, Math.round(Number(mob?.min ?? raw.mobileMin ?? fallback.mobileMin)));
-    const mobileMax = Math.max(mobileMin, Math.round(Number(mob?.max ?? raw.mobileMax ?? fallback.mobileMax)));
-    return { min, max, mobileMin, mobileMax };
+function clampInt(value, fallback, lo = 0, hi = 99) {
+    const n = Math.round(Number(value));
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(lo, Math.min(hi, n));
 }
 
-function pickAppearCount(total) {
-    const r = floatCountRange;
-    const useMobile = isMobile();
-    let min = useMobile ? r.mobileMin : r.min;
-    let max = useMobile ? r.mobileMax : r.max;
-    min = Math.max(1, Math.min(min, total));
-    max = Math.max(min, Math.min(max, total));
-    return min + ((Math.random() * (max - min + 1)) | 0);
+function loadPickRules(data) {
+    floatBgPick = clampInt(data?.bgPick ?? data?.boxes?.bg?.pick, 2, 0, 20);
+    const per = data?.perBox && typeof data.perBox === 'object' ? data.perBox : {};
+    floatPerBoxMax = clampInt(per.max, 3, 0, 20);
+    floatPerBoxMin = clampInt(per.min, 1, 0, floatPerBoxMax);
 }
 
-function pickGiantCount(available) {
-    if (available <= 0) return 0;
-    const r = floatGiantRange;
-    const useMobile = isMobile();
-    let min = useMobile ? r.mobileMin : r.min;
-    let max = useMobile ? r.mobileMax : r.max;
-    min = Math.max(0, Math.min(min, available));
-    max = Math.max(min, Math.min(max, available));
-    return min + ((Math.random() * (max - min + 1)) | 0);
+function defFromManifestItem(item, presets, defaultSize, defaultScale, box, always) {
+    const fileName = typeof item === 'string' ? item : item?.file;
+    if (!fileName || /\.json$/i.test(fileName)) return null;
+    const file = fileName.includes('/') ? fileName : `${box}/${fileName}`;
+    const size = typeof item === 'string' ? defaultSize : item.size ?? defaultSize;
+    const maxWord =
+        typeof item === 'string' ? size : item.max ?? item.augment ?? item.upTo ?? size;
+    const scale = scaleFromSizeWord(size, presets, defaultScale);
+    const maxScale = Math.max(scale, scaleFromSizeWord(maxWord, presets, scale));
+    return {
+        file,
+        scale,
+        maxScale,
+        box,
+        always: !!always,
+        move: typeof item === 'object' ? item.move : undefined,
+        speed: typeof item === 'object' ? item.speed : undefined,
+    };
+}
+
+function boxItems(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === 'object' && Array.isArray(raw.items)) return raw.items;
+    return [];
+}
+
+function packFromBoxes(src, presets, defaultSize, defaultScale) {
+    const bg = boxItems(src.bg)
+        .map((item) => defFromManifestItem(item, presets, defaultSize, defaultScale, 'bg', true))
+        .filter(Boolean);
+    const boxes = {};
+    RANDOM_BOXES.forEach((name) => {
+        boxes[name] = boxItems(src[name])
+            .map((item) => defFromManifestItem(item, presets, defaultSize, defaultScale, name, false))
+            .filter(Boolean);
+    });
+    return { bg, boxes };
 }
 
 async function loadFloatPieceDefs() {
     const data = await loadJsonAsset(FLOATS_MANIFEST);
-    floatCountRange = parseCountRange(data?.count ?? data?.appear);
-    floatGiantRange = parseCountRange(data?.giants, {
-        min: 1,
-        max: 3,
-        mobileMin: 1,
-        mobileMax: 2,
-    });
+    loadPickRules(data);
     const presets = { ...SIZE_PRESETS, ...(data?.sizes || {}) };
     const defaultSize = data?.defaultSize || 'medium';
     const defaultScale = scaleFromSizeWord(defaultSize, presets, SIZE_PRESETS.medium);
-    const items = Array.isArray(data?.items) && data.items.length
-        ? data.items
-        : FLOATS_FALLBACK_ITEMS;
-    return items
-        .map((item) => {
-            const file = typeof item === 'string' ? item : item?.file;
-            if (!file || /\.json$/i.test(file)) return null;
-            const size = typeof item === 'string' ? defaultSize : item.size ?? defaultSize;
-            const maxWord =
-                typeof item === 'string'
-                    ? size
-                    : item.max ?? item.augment ?? item.upTo ?? size;
-            const scale = scaleFromSizeWord(size, presets, defaultScale);
-            const maxScale = Math.max(
-                scale,
-                scaleFromSizeWord(maxWord, presets, scale)
-            );
-            return {
-                file,
-                scale,
-                maxScale,
-                move: typeof item === 'object' ? item.move : undefined,
-                speed: typeof item === 'object' ? item.speed : undefined,
-            };
-        })
-        .filter(Boolean);
+    const src =
+        data?.boxes && typeof data.boxes === 'object' ? data.boxes : FLOATS_FALLBACK_BOXES;
+    return packFromBoxes(src, presets, defaultSize, defaultScale);
 }
 
 function viewportWidth() {
@@ -220,71 +238,73 @@ function lerpScale(a, b, t) {
     return lo + (hi - lo) * t;
 }
 
-function canWash(def) {
-    return (def?.maxScale || 0) >= SIZE_PRESETS.enormous - 0.001;
+function pickRandomFromPool(items, min, max) {
+    const pool = shuffleInPlace((items || []).slice());
+    if (!pool.length || max <= 0) return [];
+    const hi = Math.min(max, pool.length);
+    const lo = Math.max(0, Math.min(min, hi));
+    const n = lo + ((Math.random() * (hi - lo + 1)) | 0);
+    return pool.slice(0, n);
 }
 
-function isSizedGiant(def) {
-    return (def?.scale || 0) >= SIZE_PRESETS.giant - 0.001;
+function pickFromEachBox(boxes) {
+    const picked = [];
+    RANDOM_BOXES.forEach((name) => {
+        picked.push(...pickRandomFromPool(boxes[name], floatPerBoxMin, floatPerBoxMax));
+    });
+    return shuffleInPlace(picked);
 }
 
-function planFloatLayout(defs) {
-    const preferred = defs.filter((d) => isSizedGiant(d));
-    const giantPool = shuffleInPlace(
-        preferred.length ? preferred.slice() : defs.filter((d) => canWash(d))
-    );
-    const giantN = pickGiantCount(giantPool.length);
-    const giants = giantPool.slice(0, giantN);
-    const giantSet = new Set(giants);
-    const rest = shuffleInPlace(defs.filter((d) => !giantSet.has(d)));
-    const n = pickAppearCount(defs.length);
-    const restN = Math.max(0, Math.min(rest.length, n - giants.length));
-    const mobile = isMobile();
-    const picked = giants
-        .map((def) => ({ def, role: 'wash' }))
-        .concat(rest.slice(0, restN).map((def) => ({ def, role: null })));
-
-    return picked.map((slot, i) => {
-        const def = slot.def;
-        const base = def.scale || 0.18;
-        const max = def.maxScale || base;
-        if (slot.role === 'wash' || (i === 0 && canWash(def))) {
-            const hi = Math.min(max, 2.15);
-            const lo = Math.min(hi, Math.max(base, SIZE_PRESETS.enormous));
-            return {
-                def,
-                role: 'wash',
-                washIndex: i,
-                scale: lerpScale(lo, hi, 0.35 + Math.random() * 0.65),
-                move: false,
-            };
-        }
-        const restI = i - giants.length;
-        if (restI <= (mobile ? 0 : 1)) {
-            return {
-                def,
-                role: 'anchor',
-                scale: lerpScale(base, Math.min(max, 0.42), 0.4 + Math.random() * 0.6),
-                move: false,
-            };
-        }
-        if (restI <= (mobile ? 2 : 4)) {
-            return {
-                def,
-                role: 'floater',
-                scale: lerpScale(base, Math.min(max, 0.32), Math.random()),
-                move: Math.random() < 0.55,
-                speed: 0.35 + Math.random() * 0.55,
-            };
-        }
+function planRestSlot(def, restI, mobile) {
+    const base = def.scale || 0.18;
+    const max = def.maxScale || base;
+    const fit = (cap, t) => {
+        const hi = Math.min(max, cap);
+        const lo = Math.min(base, hi);
+        return lerpScale(lo, hi, t);
+    };
+    if (restI <= (mobile ? 0 : 1)) {
         return {
             def,
-            role: 'accent',
-            scale: lerpScale(Math.min(base, max), Math.min(max, 0.18), Math.random() * 0.5),
-            move: Math.random() < 0.3,
-            speed: 0.55 + Math.random() * 0.7,
+            role: 'anchor',
+            scale: fit(0.42, 0.4 + Math.random() * 0.6),
+            move: false,
+        };
+    }
+    if (restI <= (mobile ? 2 : 4)) {
+        return {
+            def,
+            role: 'floater',
+            scale: fit(0.32, Math.random()),
+            move: Math.random() < 0.55,
+            speed: 0.35 + Math.random() * 0.55,
+        };
+    }
+    return {
+        def,
+        role: 'accent',
+        scale: fit(0.18, Math.random() * 0.5),
+        move: Math.random() < 0.3,
+        speed: 0.55 + Math.random() * 0.7,
+    };
+}
+
+function planFloatLayout(pack) {
+    const bg = pickRandomFromPool(pack?.bg || [], floatBgPick, floatBgPick);
+    const mixed = pickFromEachBox(pack?.boxes || {});
+    const mobile = isMobile();
+    const bgPlans = bg.map((def, i) => {
+        const hi = Math.min(def.maxScale || SIZE_PRESETS.giant, 2.15);
+        const lo = Math.min(hi, Math.max(def.scale || 0, SIZE_PRESETS.enormous));
+        return {
+            def,
+            role: 'wash',
+            washIndex: i,
+            scale: lerpScale(lo, hi, 0.45 + Math.random() * 0.55),
+            move: false,
         };
     });
+    return bgPlans.concat(mixed.map((def, restI) => planRestSlot(def, restI, mobile)));
 }
 
 function slotPositions(count) {
@@ -905,6 +925,16 @@ async function loadAssetImage(relativePath, opts = {}) {
     return null;
 }
 
+function floatThumbPath(file) {
+    return `${CONFIG.paths.thumbs}${file.replace(/\.[^.]+$/i, '.webp')}`;
+}
+
+async function loadFloatImage(file, opts = {}) {
+    const thumb = await loadAssetImage(floatThumbPath(file), opts);
+    if (thumb) return thumb;
+    return loadAssetImage(`${CONFIG.paths.items}${file}`, opts);
+}
+
 function attachPointerHandlers(container, item) {
     const onMove = (e) => {
         if (!item.isDragging) return;
@@ -968,13 +998,14 @@ function attachPointerHandlers(container, item) {
 }
 
 function createPieceElement(imgObj, parent, opts = {}) {
-    const { extraClass = '', linkHref = null, label = '', scale: scaleOpt, role = '', washIndex = 0 } = opts;
+    const { extraClass = '', linkHref = null, label = '', scale: scaleOpt, role = '', washIndex = 0, box = '' } = opts;
     const range = CONFIG.pieces;
     const mn = opts.minScale ?? range.minScale;
     const mx = opts.maxScale ?? range.maxScale;
 
     const container = document.createElement('div');
     container.className = `drawing-item${extraClass ? ` ${extraClass}` : ''}${role ? ` is-${role}` : ''}`;
+    if (box) container.dataset.box = box;
     const imgEl = document.createElement('img');
     imgEl.src = imgObj.src;
     imgEl.alt = label;
@@ -1068,10 +1099,11 @@ async function initFloating() {
     const layer = document.getElementById('drawings-layer');
     if (!layer) return;
 
-    const pieceDefs = await loadFloatPieceDefs();
-    if (!pieceDefs.length) return;
+    const pack = await loadFloatPieceDefs();
+    const hasRandom = RANDOM_BOXES.some((name) => pack.boxes[name]?.length);
+    if (!pack.bg.length && !hasRandom) return;
 
-    const plans = planFloatLayout(pieceDefs);
+    const plans = planFloatLayout(pack);
     const washCount = plans.filter((p) => p.role === 'wash').length;
     const slots = slotPositions(Math.max(0, plans.length - washCount));
     const staggerMs = isMobile() ? 0 : 48;
@@ -1080,10 +1112,11 @@ async function initFloating() {
         const file = plan.def.file;
         const slot = plan.role === 'wash' ? null : slots[slotI++];
         const priority = plan.role === 'wash' || index < 4;
-        void loadAssetImage(`${CONFIG.paths.items}${file}`, { priority }).then((img) => {
+        void loadFloatImage(file, { priority }).then((img) => {
             if (!img) return;
             createPieceElement(img, layer, {
                 label: file.replace(/\.[^.]+$/i, '').replace(/_/g, ' '),
+                box: plan.def.box,
                 fixedScale: plan.scale,
                 move: plan.move,
                 speed: plan.speed,
