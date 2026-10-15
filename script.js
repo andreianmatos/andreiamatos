@@ -63,19 +63,18 @@ const FLOATS_FALLBACK_BOXES = {
             { file: 'flor.png', size: 'big', max: 'giant' },
             { file: 'heart.png', size: 'medium', max: 'enormous' },
             { file: '2flor3.png', size: 'medium', max: 'giant' },
+            { file: 'anjo.png', size: 'medium', max: 'enormous' },
+            { file: 'laco.png', size: 'big', max: 'giant' },
         ],
     },
     obj: {
         items: [
-            { file: 'anjo.png', size: 'medium', max: 'enormous' },
-            { file: 'laco.png', size: 'big', max: 'giant' },
             { file: 'painted_flower.png', size: 'big', max: 'enormous' },
-            { file: 'borboleta_vrede.png', size: 'small', max: 'medium' },
+            { file: 'borboleta_vrede.png', size: 'medium', max: 'very-big' },
         ],
     },
     img: {
         items: [
-            { file: 'img (8).jpg', size: 'big', max: 'big' },
             { file: 'flower_photo.png', size: 'very-big', max: 'giant' },
             { file: 'ph__2.png', size: 'big', max: 'very-big' },
         ],
@@ -140,7 +139,7 @@ async function loadJsonAsset(relativePath) {
 
 let floatBgPick = 2;
 let floatPerBoxMin = 1;
-let floatPerBoxMax = 3;
+let floatPerBoxMax = 1;
 
 function clampInt(value, fallback, lo = 0, hi = 99) {
     const n = Math.round(Number(value));
@@ -151,7 +150,7 @@ function clampInt(value, fallback, lo = 0, hi = 99) {
 function loadPickRules(data) {
     floatBgPick = clampInt(data?.bgPick ?? data?.boxes?.bg?.pick, 2, 0, 20);
     const per = data?.perBox && typeof data.perBox === 'object' ? data.perBox : {};
-    floatPerBoxMax = clampInt(per.max, 3, 0, 20);
+    floatPerBoxMax = clampInt(per.max, 1, 0, 20);
     floatPerBoxMin = clampInt(per.min, 1, 0, floatPerBoxMax);
 }
 
@@ -1031,7 +1030,10 @@ function createPieceElement(imgObj, parent, opts = {}) {
         container.style.zIndex = String(Math.round((1.35 - Math.min(scale, 1.3)) * 14));
     }
 
-    const motion = pickMotion(scale, opts);
+    const staticBg = role === 'wash' || box === 'bg';
+    const motion = staticBg
+        ? { moves: false, speedMul: 0, vx: 0, vy: 0 }
+        : pickMotion(scale, opts);
     const item = {
         el: container,
         x: 0,
@@ -1083,7 +1085,7 @@ function createPieceElement(imgObj, parent, opts = {}) {
 
     container.style.transform = `translate3d(${item.x}px, ${item.y}px, 0)`;
     if (label) container.title = label;
-    attachPointerHandlers(container, item);
+    if (!staticBg) attachPointerHandlers(container, item);
 
     parent.appendChild(container);
     floatingItems.push(item);
@@ -1269,7 +1271,8 @@ function initCvInline() {
 document.addEventListener('DOMContentLoaded', () => {
     initCvInline();
     initChalkTrace();
-    setSiteView('home');
+    const view = new URLSearchParams(location.search).get('view');
+    setSiteView(view === 'works' || view === 'about' ? view : 'home');
     document.addEventListener('click', (e) => {
         const langBtn = e.target.closest?.('[data-lang]');
         if (langBtn && typeof window.setSiteLang === 'function') {

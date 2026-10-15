@@ -1,7 +1,7 @@
 {
-  "note": "bg: always pick 2, giant. Other folders: random items, at most 3 each.",
+  "note": "bg: always pick 2, giant. Other folders: one random item each.",
   "bgPick": 2,
-  "perBox": { "min": 1, "max": 3 },
+  "perBox": { "min": 1, "max": 1 },
   "sizes": {
     "very-small": 0.08,
     "small": 0.12,
@@ -47,20 +47,19 @@
         { "file": "drws (8)_no_bg (1).png", "size": "medium", "max": "giant" },
         { "file": "flor.png", "size": "big", "max": "giant" },
         { "file": "heart.png", "size": "medium", "max": "enormous" },
-        { "file": "2flor3.png", "size": "medium", "max": "giant" }
+        { "file": "2flor3.png", "size": "medium", "max": "giant" },
+        { "file": "anjo.png", "size": "medium", "max": "enormous" },
+        { "file": "laco.png", "size": "big", "max": "giant" }
       ]
     },
     "obj": {
       "items": [
-        { "file": "anjo.png", "size": "medium", "max": "enormous" },
-        { "file": "laco.png", "size": "big", "max": "giant" },
         { "file": "painted_flower.png", "size": "big", "max": "enormous" },
-        { "file": "borboleta_vrede.png", "size": "medium", "max": "verybig" }
+        { "file": "borboleta_vrede.png", "size": "medium", "max": "very-big" }
       ]
     },
     "img": {
       "items": [
-        { "file": "img (8).jpg", "size": "big", "max": "big" },
         { "file": "flower_photo.png", "size": "very-big", "max": "giant" },
         { "file": "ph__2.png", "size": "big", "max": "very-big" }
       ]

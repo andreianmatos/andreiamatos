@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f4f1ea">
+    <title>Linhas — Andreia Matos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="i18n.js" defer></script>
+    <script src="vendor/page-flip.browser.js" defer></script>
+    <script src="linhas.js" defer></script>
+</head>
+<body class="page-book">
+    <header class="book-chrome">
+        <a class="pretext-name" href="index.html">Andreia Matos</a><span class="pretext-plain"> · </span><button type="button" class="pretext-nav-link" data-lang="en">en</button><span class="pretext-plain"> : </span><button type="button" class="pretext-nav-link" data-lang="pt">pt</button><span class="pretext-plain"> · </span><a class="pretext-nav-link" href="index.html" data-i18n="nav.home">index</a><span class="pretext-plain"> · </span><a class="pretext-nav-link" href="index.html?view=about" data-i18n="nav.about">about</a><span class="pretext-plain"> · </span><a class="pretext-nav-link is-current" href="index.html?view=works" data-i18n="nav.works" aria-current="page">works</a>
+    </header>
+    <main class="book-stage">
+        <div id="book" aria-label="Linhas"></div>
+    </main>
+    <footer class="book-bar">
+        <button type="button" id="book-prev" aria-label="Previous page">←</button>
+        <span id="book-pos" class="book-pos">1 / 40</span>
+        <button type="button" id="book-next" aria-label="Next page">→</button>
+    </footer>
+</body>
+</html>
